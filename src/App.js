@@ -15,7 +15,7 @@ function App() {
   const [rotations, setRotations] = useState([]);
 
   const replenishmentAmount = 500;
-  const diffBetweenReplenishmentAmountAndThousandYen = 1000 / replenishmentAmount;
+  const ratioOfReplenishmentAmountToThousandYen = 1000 / replenishmentAmount;
 
   const rotationType = {
     normal: "normal",
@@ -34,7 +34,7 @@ function App() {
     if (rotation.type === rotationType.resetStart) {
       content = `${rotation.rotationNumber} > start`;
     } else if (rotation.type === rotationType.normal) {
-      content = `${rotation.rotationNumber} 18.0 21.0`;
+      content = `${rotation.rotationNumber} ${rotation.rotationNumberMostRecent} 21.0`;
     }
     return <ListGroup.Item key={index}>{content}</ListGroup.Item>;
   });
@@ -62,12 +62,13 @@ function App() {
     const rotationNumberLast = rotations[rotations.length - 1].rotationNumber;
 
     const rotationNumberDiffFromLast = rotationNumberInputed - rotationNumberLast;
-
+    const rotationNumberMostRecent = (rotationNumberDiffFromLast * ratioOfReplenishmentAmountToThousandYen).toFixed(1);
     const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (replenishmentAmount * investmentCnt);
 
     setRotations(
       rotations.concat({
         type: rotationType.normal,
+        rotationNumberMostRecent: rotationNumberMostRecent,
         rotationNumber: rotationNumberInputed,
       })
     );
