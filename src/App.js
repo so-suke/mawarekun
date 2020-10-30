@@ -62,13 +62,13 @@ function App() {
     const rotationNumberLast = rotations[rotations.length - 1].rotationNumber;
 
     const rotationNumberDiffFromLast = rotationNumberInputed - rotationNumberLast;
-    const rotationNumberMostRecent = (rotationNumberDiffFromLast * ratioOfReplenishmentAmountToThousandYen).toFixed(1);
+    const rotationRateMostRecent = (rotationNumberDiffFromLast * ratioOfReplenishmentAmountToThousandYen).toFixed(1);
     const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (replenishmentAmount * investmentCnt);
 
     setRotations(
       rotations.concat({
         type: rotationType.normal,
-        rotationNumberMostRecent: rotationNumberMostRecent,
+        rotationRateMostRecent,
         rotationNumber: rotationNumberInputed,
       })
     );
