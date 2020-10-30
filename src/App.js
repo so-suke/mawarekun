@@ -10,9 +10,8 @@ const ShrinkNameButton = styled(Button)`
 
 function App() {
   const [rotationNumberInputed, setRotationNumberInputed] = useState("0");
-  const [investmentCnt, setInvestmentCnt] = useState(0);
-
   const [rotations, setRotations] = useState([]);
+  const [sampleNumber, setSampleNumber] = useState(0);
 
   const replenishmentAmount = 500;
   const ratioOfReplenishmentAmountToThousandYen = 1000 / replenishmentAmount;
@@ -32,9 +31,11 @@ function App() {
   const $rotations = rotations.map((rotation, index) => {
     let content = "";
     if (rotation.type === rotationType.resetStart) {
+      content = `${rotation.rotationNumber} --start--`;
+    } else if (rotation.type === rotationType.continueStart) {
       content = `${rotation.rotationNumber} > start`;
     } else if (rotation.type === rotationType.normal) {
-      content = `${rotation.rotationNumber} ${rotation.rotationNumberMostRecent} 21.0`;
+      content = `${rotation.rotationNumber} ${rotation.rotationRateMostRecent} ${rotation.rotationRate}`;
     }
     return <ListGroup.Item key={index}>{content}</ListGroup.Item>;
   });
@@ -51,24 +52,69 @@ function App() {
     setRotationNumberInputed("");
   }
 
+  function _calcInvestmentCnt() {
+    let investmentCnt = 0;
+    rotations.forEach((rotation) => {
+      if (rotation.type !== rotationType.normal) return;
+
+      investmentCnt++;
+    });
+
+    return investmentCnt;
+  }
+
+  function _getTotalRotationNumber() {
+    let totalRotationNumber = 0;
+    let rotationNumberLast = 0;
+    rotations.forEach((rotation) => {
+      if (rotation.type !== rotationType.normal) {
+        rotationNumberLast = Number(rotation.rotationNumber);
+      }
+
+      totalRotationNumber += Number(rotation.rotationNumber) - rotationNumberLast;
+      rotationNumberLast = Number(rotation.rotationNumber);
+    });
+
+    return totalRotationNumber;
+  }
+
   function rotation() {
     if (_isResetStarted() === false) {
       alert(`リセットスタートをしましょう`);
       return;
     }
 
-    setInvestmentCnt(investmentCnt + 1);
-
     const rotationNumberLast = rotations[rotations.length - 1].rotationNumber;
 
     const rotationNumberDiffFromLast = rotationNumberInputed - rotationNumberLast;
     const rotationRateMostRecent = (rotationNumberDiffFromLast * ratioOfReplenishmentAmountToThousandYen).toFixed(1);
+
+    const investmentCnt = _calcInvestmentCnt() + 1;
     const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (replenishmentAmount * investmentCnt);
+
+    const totalRotationNumber = _getTotalRotationNumber() + rotationNumberDiffFromLast;
+    const rotationRate = (totalRotationNumber * ratioOfTotalInvestmentAmountToThousandYen).toFixed(1);
 
     setRotations(
       rotations.concat({
         type: rotationType.normal,
         rotationRateMostRecent,
+        rotationRate,
+        rotationNumber: rotationNumberInputed,
+      })
+    );
+    clearRotationNumberInputed();
+  }
+
+  function continueStart() {
+    if (rotationNumberInputed === "") {
+      alert(`回転数を入力しましょう`);
+      return;
+    }
+
+    setRotations(
+      rotations.concat({
+        type: rotationType.continueStart,
         rotationNumber: rotationNumberInputed,
       })
     );
@@ -100,7 +146,7 @@ function App() {
               回転単価：<span></span>
             </p>
             <p className="mb-0">
-              総回転数：<span></span>
+              総回転数：<span>{_getTotalRotationNumber()}</span>
             </p>
             <p className="mb-0">
               仕事量：<span></span>
@@ -117,7 +163,7 @@ function App() {
               <Button variant="primary" className="col-4" onClick={() => rotation()}>
                 回転
               </Button>
-              <ShrinkNameButton variant="primary" className="col-4">
+              <ShrinkNameButton variant="primary" className="col-4" onClick={() => continueStart()}>
                 継続スタート
               </ShrinkNameButton>
               <ShrinkNameButton id="resetStartButton" variant="primary" className="col-4" onClick={() => resetStart()}>
