@@ -1,0 +1,23 @@
+{
+  "files": {
+    "main.css": "/mawarekun/static/css/main.6dea0f05.chunk.css",
+    "main.js": "/mawarekun/static/js/main.4e0c453d.chunk.js",
+    "main.js.map": "/mawarekun/static/js/main.4e0c453d.chunk.js.map",
+    "runtime-main.js": "/mawarekun/static/js/runtime-main.34060ba6.js",
+    "runtime-main.js.map": "/mawarekun/static/js/runtime-main.34060ba6.js.map",
+    "static/css/2.20aa2d7b.chunk.css": "/mawarekun/static/css/2.20aa2d7b.chunk.css",
+    "static/js/2.cfe1fb37.chunk.js": "/mawarekun/static/js/2.cfe1fb37.chunk.js",
+    "static/js/2.cfe1fb37.chunk.js.map": "/mawarekun/static/js/2.cfe1fb37.chunk.js.map",
+    "index.html": "/mawarekun/index.html",
+    "static/css/2.20aa2d7b.chunk.css.map": "/mawarekun/static/css/2.20aa2d7b.chunk.css.map",
+    "static/css/main.6dea0f05.chunk.css.map": "/mawarekun/static/css/main.6dea0f05.chunk.css.map",
+    "static/js/2.cfe1fb37.chunk.js.LICENSE.txt": "/mawarekun/static/js/2.cfe1fb37.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.34060ba6.js",
+    "static/css/2.20aa2d7b.chunk.css",
+    "static/js/2.cfe1fb37.chunk.js",
+    "static/css/main.6dea0f05.chunk.css",
+    "static/js/main.4e0c453d.chunk.js"
+  ]
+}
