@@ -14,7 +14,6 @@ function App() {
   const [rotationNumberInputed, setRotationNumberInputed] = useState("");
   const [rotations, setRotations] = useState([]);
   const [totalRotationNumber, setTotalRotationNumber] = useState(0);
-  const [totalRotationNumberTest, setTotalRotationNumberTest] = useState(0);
 
   const replenishmentAmount = 500;
   const ratioOfReplenishmentAmountToThousandYen = 1000 / replenishmentAmount;
@@ -51,19 +50,16 @@ function App() {
     }, 1);
   }, []);
 
-  useEffect(() => {
-    if (rotations.length === 0) return;
-    const lastRotation = rotations[rotations.length - 1];
-    if (lastRotation.type !== rotationType.normal) return;
-    const rotationNumber = totalRotationNumberTest + Number(lastRotation.rotationNumber);
-    console.log(`effect ${rotationNumber}`);
-  }, [rotations]);
+  function isResetStarted() {
+    return rotations.length > 0 && rotations[0].type === rotationType.resetStart;
+  }
 
   function changeBorder(event) {
     setBorder(event.target.value);
   }
+
   function changeRotationNumberInputed(event) {
-    setRotationNumberInputed(event.target.value);
+    setRotationNumberInputed(Number(event.target.value));
   }
 
   function _isResetStarted() {
@@ -125,11 +121,10 @@ function App() {
 
     const rotationNumberLast = rotations[rotations.length - 1].rotationNumber;
 
-    const rotationNumberDiffFromLast = rotationNumberInputed - rotationNumberLast;
+    const rotationNumberDiffFromLast = Number(rotationNumberInputed) - rotationNumberLast;
     const rotationRateMostRecent = (rotationNumberDiffFromLast * ratioOfReplenishmentAmountToThousandYen).toFixed(1);
 
-    const totalRotationNumberPrev = totalRotationNumber;
-    const totalRotationNumberNow = totalRotationNumberPrev + rotationNumberDiffFromLast;
+    const totalRotationNumberNow = totalRotationNumber + rotationNumberDiffFromLast;
     setTotalRotationNumber(totalRotationNumberNow);
 
     setRotations(
@@ -137,7 +132,7 @@ function App() {
         type: rotationType.normal,
         rotationRateMostRecent,
         rotationRate,
-        rotationNumber: rotationNumberInputed,
+        rotationNumber: Number(rotationNumberInputed),
       })
     );
     clearRotationNumberInputed();
@@ -160,7 +155,28 @@ function App() {
     clearRotationNumberInputed();
   }
 
+  function getRotationsTextForCopyToClickboard() {
+    const text = `回転率：${rotationRate}, 仕事量：${rotationUnitPrice}円×${totalRotationNumber}回(${_getWorkAmount()}円)`;
+    return text;
+  }
+
+  function setClipboard() {
+    const text = getRotationsTextForCopyToClickboard();
+    navigator.clipboard.writeText(text).then(
+      function () {
+        console.log("クリップボード書き込み成功");
+      },
+      function () {
+        console.log("クリップボード書き込み成功");
+      }
+    );
+  }
+
   function resetStart() {
+    if (isResetStarted()) {
+      console.log("既にリセットスタートされています");
+      return;
+    }
     if (rotationNumberInputed === "") {
       alert(`回転数を入力しましょう`);
       return;
@@ -198,9 +214,14 @@ function App() {
               仕事量：<span>{_getWorkAmount()}</span>
             </p>
 
-            <Button className="mb-1" variant="primary" onClick={() => deleteOneRotation()}>
-              1行削除
-            </Button>
+            <Row>
+              <Button className="mr-2 mb-1" variant="primary" onClick={() => setClipboard()}>
+                クリップボードコピー
+              </Button>
+              <Button className="mb-1" variant="primary" onClick={() => deleteOneRotation()}>
+                1行削除
+              </Button>
+            </Row>
 
             <FormControl
               className="mb-1"
