@@ -13,9 +13,8 @@ function App() {
 
   const [rotationNumberInputed, setRotationNumberInputed] = useState("");
   const [rotations, setRotations] = useState([]);
-  const [rotationUnitPrice, setRotationUnitPrice] = useState(0);
-  const [rotationRate, setRotationRate] = useState(0);
   const [totalRotationNumber, setTotalRotationNumber] = useState(0);
+  const [totalRotationNumberTest, setTotalRotationNumberTest] = useState(0);
 
   const replenishmentAmount = 500;
   const ratioOfReplenishmentAmountToThousandYen = 1000 / replenishmentAmount;
@@ -52,9 +51,16 @@ function App() {
     }, 1);
   }, []);
 
+  useEffect(() => {
+    if (rotations.length === 0) return;
+    const lastRotation = rotations[rotations.length - 1];
+    if (lastRotation.type !== rotationType.normal) return;
+    const rotationNumber = totalRotationNumberTest + Number(lastRotation.rotationNumber);
+    console.log(`effect ${rotationNumber}`);
+  }, [rotations]);
+
   function changeBorder(event) {
     setBorder(event.target.value);
-    setRotationUnitPrice(_calcRotationUnitPrice({ border: event.target.value, rotationRate }));
   }
   function changeRotationNumberInputed(event) {
     setRotationNumberInputed(event.target.value);
@@ -72,10 +78,28 @@ function App() {
     return (rotationUnitPrice * totalRotationNumber).toFixed(0);
   }
 
-  const _calcRotationUnitPrice = ({ border, rotationRate }) => {
+  const investmentCnt = useMemo(() => {
+    let cnt = 0;
+    rotations.forEach((rotation) => {
+      if (rotation.type !== rotationType.normal) return;
+
+      cnt++;
+    });
+
+    return cnt;
+  }, [rotations, rotationType.normal]);
+
+  const rotationRate = useMemo(() => {
+    if (investmentCnt === 0) return 0;
+    const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (replenishmentAmount * investmentCnt);
+
+    return (totalRotationNumber * ratioOfTotalInvestmentAmountToThousandYen).toFixed(1);
+  }, [totalRotationNumber, investmentCnt]);
+
+  const rotationUnitPrice = useMemo(() => {
     if (rotationRate === 0) return 0;
     return (1000 / border - 1000 / rotationRate).toFixed(1);
-  };
+  }, [border, rotationRate]);
 
   function deleteOneRotation() {
     const rotationsLength = rotations.length;
@@ -88,23 +112,9 @@ function App() {
       const rotationNumberDiffShouldSub =
         rotations[rotations.length - 1].rotationNumber - rotationsDeletedOne[rotationsDeletedOne.length - 1].rotationNumber;
       setTotalRotationNumber(totalRotationNumber - rotationNumberDiffShouldSub);
-      const rotationRateNow = rotationsDeletedOne[rotationsDeletedOne.length - 1].rotationRate;
-      setRotationRate(rotationRateNow);
-      setRotationUnitPrice(_calcRotationUnitPrice({ border, rotationRate: rotationRateNow }));
     }
 
     setRotations(rotationsDeletedOne);
-  }
-
-  function _calcInvestmentCnt() {
-    let investmentCnt = 0;
-    rotations.forEach((rotation) => {
-      if (rotation.type !== rotationType.normal) return;
-
-      investmentCnt++;
-    });
-
-    return investmentCnt;
   }
 
   function rotation() {
@@ -118,22 +128,15 @@ function App() {
     const rotationNumberDiffFromLast = rotationNumberInputed - rotationNumberLast;
     const rotationRateMostRecent = (rotationNumberDiffFromLast * ratioOfReplenishmentAmountToThousandYen).toFixed(1);
 
-    const investmentCnt = _calcInvestmentCnt() + 1;
-    const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (replenishmentAmount * investmentCnt);
-
     const totalRotationNumberPrev = totalRotationNumber;
     const totalRotationNumberNow = totalRotationNumberPrev + rotationNumberDiffFromLast;
     setTotalRotationNumber(totalRotationNumberNow);
-    const rotationRateNow = (totalRotationNumberNow * ratioOfTotalInvestmentAmountToThousandYen).toFixed(1);
-
-    setRotationRate(rotationRateNow);
-    setRotationUnitPrice(_calcRotationUnitPrice({ border, rotationRate: rotationRateNow }));
 
     setRotations(
       rotations.concat({
         type: rotationType.normal,
         rotationRateMostRecent,
-        rotationRate: rotationRateNow,
+        rotationRate,
         rotationNumber: rotationNumberInputed,
       })
     );
