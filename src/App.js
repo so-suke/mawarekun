@@ -1,17 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import styled from "styled-components";
 
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Container, Row, Col, FormControl, Button, ListGroup } from "react-bootstrap";
+import { Container, Row, Col, FormControl, Button, ListGroup, InputGroup } from "react-bootstrap";
 
 const ShrinkNameButton = styled(Button)`
   font-size: 0.4rem;
 `;
 
 function App() {
-  const [rotationNumberInputed, setRotationNumberInputed] = useState("0");
+  const [border, setBorder] = useState(18.0);
+
+  const [rotationNumberInputed, setRotationNumberInputed] = useState("");
   const [rotations, setRotations] = useState([]);
-  const [sampleNumber, setSampleNumber] = useState(0);
+  const [rotationUnitPrice, setRotationUnitPrice] = useState(0);
+  const [rotationRate, setRotationRate] = useState(0);
+  const [totalRotationNumber, setTotalRotationNumber] = useState(0);
 
   const replenishmentAmount = 500;
   const ratioOfReplenishmentAmountToThousandYen = 1000 / replenishmentAmount;
@@ -40,6 +44,18 @@ function App() {
     return <ListGroup.Item key={index}>{content}</ListGroup.Item>;
   });
 
+  useEffect(() => {
+    setRotationNumberInputed("0");
+    const $resetStartButton = document.getElementById("resetStartButton");
+    setTimeout(() => {
+      $resetStartButton.click();
+    }, 1);
+  }, []);
+
+  function changeBorder(event) {
+    setBorder(event.target.value);
+    setRotationUnitPrice(_calcRotationUnitPrice({ border: event.target.value, rotationRate }));
+  }
   function changeRotationNumberInputed(event) {
     setRotationNumberInputed(event.target.value);
   }
@@ -52,6 +68,34 @@ function App() {
     setRotationNumberInputed("");
   }
 
+  function _getWorkAmount() {
+    return (rotationUnitPrice * totalRotationNumber).toFixed(0);
+  }
+
+  const _calcRotationUnitPrice = ({ border, rotationRate }) => {
+    if (rotationRate === 0) return 0;
+    return (1000 / border - 1000 / rotationRate).toFixed(1);
+  };
+
+  function deleteOneRotation() {
+    const rotationsLength = rotations.length;
+
+    const rotationsDeletedOne = rotations.filter((rotation, index) => {
+      return index !== rotationsLength - 1;
+    });
+
+    if (rotationsDeletedOne.length > 0) {
+      const rotationNumberDiffShouldSub =
+        rotations[rotations.length - 1].rotationNumber - rotationsDeletedOne[rotationsDeletedOne.length - 1].rotationNumber;
+      setTotalRotationNumber(totalRotationNumber - rotationNumberDiffShouldSub);
+      const rotationRateNow = rotationsDeletedOne[rotationsDeletedOne.length - 1].rotationRate;
+      setRotationRate(rotationRateNow);
+      setRotationUnitPrice(_calcRotationUnitPrice({ border, rotationRate: rotationRateNow }));
+    }
+
+    setRotations(rotationsDeletedOne);
+  }
+
   function _calcInvestmentCnt() {
     let investmentCnt = 0;
     rotations.forEach((rotation) => {
@@ -61,21 +105,6 @@ function App() {
     });
 
     return investmentCnt;
-  }
-
-  function _getTotalRotationNumber() {
-    let totalRotationNumber = 0;
-    let rotationNumberLast = 0;
-    rotations.forEach((rotation) => {
-      if (rotation.type !== rotationType.normal) {
-        rotationNumberLast = Number(rotation.rotationNumber);
-      }
-
-      totalRotationNumber += Number(rotation.rotationNumber) - rotationNumberLast;
-      rotationNumberLast = Number(rotation.rotationNumber);
-    });
-
-    return totalRotationNumber;
   }
 
   function rotation() {
@@ -92,14 +121,19 @@ function App() {
     const investmentCnt = _calcInvestmentCnt() + 1;
     const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (replenishmentAmount * investmentCnt);
 
-    const totalRotationNumber = _getTotalRotationNumber() + rotationNumberDiffFromLast;
-    const rotationRate = (totalRotationNumber * ratioOfTotalInvestmentAmountToThousandYen).toFixed(1);
+    const totalRotationNumberPrev = totalRotationNumber;
+    const totalRotationNumberNow = totalRotationNumberPrev + rotationNumberDiffFromLast;
+    setTotalRotationNumber(totalRotationNumberNow);
+    const rotationRateNow = (totalRotationNumberNow * ratioOfTotalInvestmentAmountToThousandYen).toFixed(1);
+
+    setRotationRate(rotationRateNow);
+    setRotationUnitPrice(_calcRotationUnitPrice({ border, rotationRate: rotationRateNow }));
 
     setRotations(
       rotations.concat({
         type: rotationType.normal,
         rotationRateMostRecent,
-        rotationRate,
+        rotationRate: rotationRateNow,
         rotationNumber: rotationNumberInputed,
       })
     );
@@ -115,6 +149,7 @@ function App() {
     setRotations(
       rotations.concat({
         type: rotationType.continueStart,
+        rotationRate,
         rotationNumber: rotationNumberInputed,
       })
     );
@@ -130,6 +165,7 @@ function App() {
     setRotations(
       rotations.concat({
         type: rotationType.resetStart,
+        rotationRate: 0,
         rotationNumber: rotationNumberInputed,
       })
     );
@@ -142,19 +178,36 @@ function App() {
       <Container className="pt-3">
         <Row>
           <Col>
-            <p className="mb-0">
-              回転単価：<span></span>
-            </p>
-            <p className="mb-0">
-              総回転数：<span>{_getTotalRotationNumber()}</span>
-            </p>
-            <p className="mb-0">
-              仕事量：<span></span>
-            </p>
-            <Button variant="primary">1行削除</Button>
-            <FormControl id="rotationNumberInput" value={rotationNumberInputed} onChange={changeRotationNumberInputed} placeholder="回転数入力" />
+            <InputGroup size="sm" className="mb-3">
+              <InputGroup.Prepend>
+                <InputGroup.Text>ボーダー</InputGroup.Text>
+              </InputGroup.Prepend>
+              <FormControl value={border} onChange={changeBorder} />
+            </InputGroup>
 
-            <Row>
+            <p className="mb-0">
+              回転単価：<span>{rotationUnitPrice}</span>
+            </p>
+            <p className="mb-0">
+              総回転数：<span>{totalRotationNumber}</span>
+            </p>
+            <p className="mb-0">
+              仕事量：<span>{_getWorkAmount()}</span>
+            </p>
+
+            <Button className="mb-1" variant="primary" onClick={() => deleteOneRotation()}>
+              1行削除
+            </Button>
+
+            <FormControl
+              className="mb-1"
+              id="rotationNumberInput"
+              value={rotationNumberInputed}
+              onChange={changeRotationNumberInputed}
+              placeholder="回転数入力"
+            />
+
+            <Row className="m-0">
               {$numberButtons}
               <Button variant="primary" className="col-4" onClick={() => clearRotationNumberInputed()}>
                 C
