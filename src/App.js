@@ -2,7 +2,9 @@ import { useState, useEffect, useMemo } from "react";
 import styled from "styled-components";
 
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Container, Row, Col, FormControl, Button, ListGroup, InputGroup } from "react-bootstrap";
+import { Container, Row, Col, Form, FormControl, Button, ListGroup, InputGroup } from "react-bootstrap";
+
+import { format } from "date-fns";
 
 const ShrinkNameButton = styled(Button)`
   font-size: 0.4rem;
@@ -156,7 +158,9 @@ function App() {
   }
 
   function getRotationsTextForCopyToClickboard() {
-    const text = `回転率：${rotationRate}, 仕事量：${rotationUnitPrice}円×${totalRotationNumber}回(${_getWorkAmount()}円)`;
+    const dateNowFormated = format(new Date(), "yyyy/MM/dd hh:mm");
+    const text = `${dateNowFormated}
+回転率：${rotationRate}, 仕事量：${rotationUnitPrice}円×${totalRotationNumber}回(${_getWorkAmount()}円)`;
     return text;
   }
 
@@ -197,13 +201,6 @@ function App() {
       <Container className="pt-3">
         <Row>
           <Col>
-            <InputGroup size="sm" className="mb-3">
-              <InputGroup.Prepend>
-                <InputGroup.Text>ボーダー</InputGroup.Text>
-              </InputGroup.Prepend>
-              <FormControl value={border} onChange={changeBorder} />
-            </InputGroup>
-
             <p className="mb-0">
               回転単価：<span>{rotationUnitPrice}</span>
             </p>
@@ -215,8 +212,8 @@ function App() {
             </p>
 
             <Row>
-              <Button className="mr-2 mb-1" variant="primary" onClick={() => setClipboard()}>
-                クリップボードコピー
+              <Button className="mr-1 mb-1" variant="primary" onClick={() => setClipboard()}>
+                コピー
               </Button>
               <Button className="mb-1" variant="primary" onClick={() => deleteOneRotation()}>
                 1行削除
@@ -231,7 +228,7 @@ function App() {
               placeholder="回転数入力"
             />
 
-            <Row className="m-0">
+            <Row className="m-0 mb-2">
               {$numberButtons}
               <Button variant="primary" className="col-4" onClick={() => clearRotationNumberInputed()}>
                 C
@@ -246,6 +243,15 @@ function App() {
               <ShrinkNameButton id="resetStartButton" variant="primary" className="col-4" onClick={() => resetStart()}>
                 リセットスタート
               </ShrinkNameButton>
+            </Row>
+
+            <Row>
+              <InputGroup size="sm">
+                <InputGroup.Prepend>
+                  <InputGroup.Text>ボーダー</InputGroup.Text>
+                </InputGroup.Prepend>
+                <FormControl value={border} onChange={changeBorder} />
+              </InputGroup>
             </Row>
           </Col>
           <Col>
