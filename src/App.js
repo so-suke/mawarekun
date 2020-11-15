@@ -15,6 +15,9 @@ function App() {
 
   const [rotationNumberInputed, setRotationNumberInputed] = useState("");
   const [rotations, setRotations] = useState([]);
+  const [rotationRate, setRotationRate] = useState(0);
+  const [investmentCnt, setInvestmentCnt] = useState(0);
+
   const [totalRotationNumber, setTotalRotationNumber] = useState(0);
 
   const replenishmentAmount = 500;
@@ -76,23 +79,22 @@ function App() {
     return (rotationUnitPrice * totalRotationNumber).toFixed(0);
   }
 
-  const investmentCnt = useMemo(() => {
-    let cnt = 0;
-    rotations.forEach((rotation) => {
-      if (rotation.type !== rotationType.normal) return;
+  // const investmentCnt = useMemo(() => {
+  //   let cnt = 0;
+  //   rotations.forEach((rotation) => {
+  //     if (rotation.type !== rotationType.normal) return;
 
-      cnt++;
-    });
+  //     cnt++;
+  //   });
 
-    return cnt;
-  }, [rotations, rotationType.normal]);
+  //   return cnt;
+  // }, [rotations, rotationType.normal]);
 
-  const rotationRate = useMemo(() => {
-    if (investmentCnt === 0) return 0;
-    const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (replenishmentAmount * investmentCnt);
-
-    return (totalRotationNumber * ratioOfTotalInvestmentAmountToThousandYen).toFixed(1);
-  }, [totalRotationNumber, investmentCnt]);
+  // const rotationRate = useMemo(() => {
+  //   if (investmentCnt === 0) return 0;
+  //   const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (replenishmentAmount * investmentCnt);
+  //   return (totalRotationNumber * ratioOfTotalInvestmentAmountToThousandYen).toFixed(1);
+  // }, [totalRotationNumber, investmentCnt]);
 
   const rotationUnitPrice = useMemo(() => {
     if (rotationRate === 0) return 0;
@@ -101,6 +103,11 @@ function App() {
 
   function deleteOneRotation() {
     const rotationsLength = rotations.length;
+
+    const lastRotation = rotations[rotations.length - 1];
+    if (lastRotation.type === rotationType.normal) {
+      setInvestmentCnt(investmentCnt - 1);
+    }
 
     const rotationsDeletedOne = rotations.filter((rotation, index) => {
       return index !== rotationsLength - 1;
@@ -121,6 +128,9 @@ function App() {
       return;
     }
 
+    const investmentCntNow = investmentCnt + 1;
+    setInvestmentCnt(investmentCntNow);
+
     const rotationNumberLast = rotations[rotations.length - 1].rotationNumber;
 
     const rotationNumberDiffFromLast = Number(rotationNumberInputed) - rotationNumberLast;
@@ -129,11 +139,16 @@ function App() {
     const totalRotationNumberNow = totalRotationNumber + rotationNumberDiffFromLast;
     setTotalRotationNumber(totalRotationNumberNow);
 
+    const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (replenishmentAmount * investmentCntNow);
+    const rotationRateNow = (totalRotationNumberNow * ratioOfTotalInvestmentAmountToThousandYen).toFixed(1);
+
+    setRotationRate(rotationRateNow);
+
     setRotations(
       rotations.concat({
         type: rotationType.normal,
         rotationRateMostRecent,
-        rotationRate,
+        rotationRate: rotationRateNow,
         rotationNumber: Number(rotationNumberInputed),
       })
     );
