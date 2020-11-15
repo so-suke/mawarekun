@@ -79,23 +79,6 @@ function App() {
     return (rotationUnitPrice * totalRotationNumber).toFixed(0);
   }
 
-  // const investmentCnt = useMemo(() => {
-  //   let cnt = 0;
-  //   rotations.forEach((rotation) => {
-  //     if (rotation.type !== rotationType.normal) return;
-
-  //     cnt++;
-  //   });
-
-  //   return cnt;
-  // }, [rotations, rotationType.normal]);
-
-  // const rotationRate = useMemo(() => {
-  //   if (investmentCnt === 0) return 0;
-  //   const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (replenishmentAmount * investmentCnt);
-  //   return (totalRotationNumber * ratioOfTotalInvestmentAmountToThousandYen).toFixed(1);
-  // }, [totalRotationNumber, investmentCnt]);
-
   const rotationUnitPrice = useMemo(() => {
     if (rotationRate === 0) return 0;
     return (1000 / border - 1000 / rotationRate).toFixed(1);
