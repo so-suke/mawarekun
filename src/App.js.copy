@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import styled from "styled-components";
 
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Container, Row, Col, Form, FormControl, Button, ListGroup, InputGroup } from "react-bootstrap";
+import { Container, Row, Col, FormControl, Button, ListGroup, InputGroup } from "react-bootstrap";
 
 import { format } from "date-fns";
 
@@ -10,15 +10,18 @@ const ShrinkNameButton = styled(Button)`
   font-size: 0.4rem;
 `;
 
+const EXCHANGE_RATE_BASE = 4;
+
 function App() {
   const [border, setBorder] = useState(18.0);
-
   const [rotationNumberInputed, setRotationNumberInputed] = useState("");
   const [rotations, setRotations] = useState([]);
   const [rotationRate, setRotationRate] = useState(0);
   const [investmentCnt, setInvestmentCnt] = useState(0);
-
   const [totalRotationNumber, setTotalRotationNumber] = useState(0);
+  const [exchangeRate, setExchangeRate] = useState(4);
+
+  const rotationListRef = useRef(null);
 
   const replenishmentAmount = 500;
   const ratioOfReplenishmentAmountToThousandYen = 1000 / replenishmentAmount;
@@ -48,19 +51,43 @@ function App() {
   });
 
   useEffect(() => {
-    setRotationNumberInputed("0");
-    const $resetStartButton = document.getElementById("resetStartButton");
-    setTimeout(() => {
-      $resetStartButton.click();
-    }, 1);
+    const rotationsFromWebStorage = JSON.parse(localStorage.getItem("rotations"));
+    if (rotationsFromWebStorage !== null && rotationsFromWebStorage.length > 0) {
+      setRotations(rotationsFromWebStorage);
+      // 各再計算を行う
+      setRotationRate(localStorage.getItem("rotationRate"));
+      console.log(calcTotalRotationNumber({ rotations: rotationsFromWebStorage }));
+    }
   }, []);
+
+  // useEffect(() => {
+  //   setRotationNumberInputed("0");
+  //   const $resetStartButton = document.getElementById("resetStartButton");
+  //   setTimeout(() => {
+  //     $resetStartButton.click();
+  //   }, 1);
+  // }, []);
+
+  useEffect(() => {
+    rotationListRef.current.scrollTop = 700;
+    localStorage.setItem("rotations", JSON.stringify(rotations));
+  }, [rotations]);
+
+  useEffect(() => {
+    localStorage.setItem("rotationRate", rotationRate);
+  }, [rotationRate]);
 
   function isResetStarted() {
     return rotations.length > 0 && rotations[0].type === rotationType.resetStart;
   }
 
+  // change系
   function changeBorder(event) {
     setBorder(event.target.value);
+  }
+
+  function changeExchangeRate(event) {
+    setExchangeRate(event.target.value);
   }
 
   function changeRotationNumberInputed(event) {
@@ -79,6 +106,15 @@ function App() {
     return (rotationUnitPrice * totalRotationNumber).toFixed(0);
   }
 
+  function calcTotalRotationNumber({ rotations }) {
+    let totalRotationNumber = 0;
+    rotations.forEach((rotation) => {
+      if (rotation.type !== rotationType.normal) return;
+      totalRotationNumber += rotation.rotationNumber;
+    });
+    return totalRotationNumber;
+  }
+
   const rotationUnitPrice = useMemo(() => {
     if (rotationRate === 0) return 0;
     return (1000 / border - 1000 / rotationRate).toFixed(1);
@@ -86,6 +122,8 @@ function App() {
 
   function deleteOneRotation() {
     const rotationsLength = rotations.length;
+
+    if (rotationsLength === 0) return;
 
     const lastRotation = rotations[rotations.length - 1];
     if (lastRotation.type === rotationType.normal) {
@@ -96,7 +134,13 @@ function App() {
       return index !== rotationsLength - 1;
     });
 
-    if (rotationsDeletedOne.length > 0) {
+    if (rotationsDeletedOne.length === 1 || rotationsDeletedOne.length === 0) {
+      setRotationRate(0);
+    } else {
+      setRotationRate(rotationsDeletedOne[rotationsDeletedOne.length - 1].rotationRate);
+    }
+
+    if (lastRotation.type === rotationType.normal && rotationsDeletedOne.length > 0) {
       const rotationNumberDiffShouldSub =
         rotations[rotations.length - 1].rotationNumber - rotationsDeletedOne[rotationsDeletedOne.length - 1].rotationNumber;
       setTotalRotationNumber(totalRotationNumber - rotationNumberDiffShouldSub);
@@ -113,17 +157,18 @@ function App() {
 
     const investmentCntNow = investmentCnt + 1;
     setInvestmentCnt(investmentCntNow);
+    const magnificationForExchangeRate = exchangeRate / EXCHANGE_RATE_BASE;
 
     const rotationNumberLast = rotations[rotations.length - 1].rotationNumber;
 
     const rotationNumberDiffFromLast = Number(rotationNumberInputed) - rotationNumberLast;
-    const rotationRateMostRecent = (rotationNumberDiffFromLast * ratioOfReplenishmentAmountToThousandYen).toFixed(1);
+    const rotationRateMostRecent = (rotationNumberDiffFromLast * ratioOfReplenishmentAmountToThousandYen * magnificationForExchangeRate).toFixed(1);
 
     const totalRotationNumberNow = totalRotationNumber + rotationNumberDiffFromLast;
     setTotalRotationNumber(totalRotationNumberNow);
 
     const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (replenishmentAmount * investmentCntNow);
-    const rotationRateNow = (totalRotationNumberNow * ratioOfTotalInvestmentAmountToThousandYen).toFixed(1);
+    const rotationRateNow = (totalRotationNumberNow * ratioOfTotalInvestmentAmountToThousandYen * magnificationForExchangeRate).toFixed(1);
 
     setRotationRate(rotationRateNow);
 
@@ -148,7 +193,7 @@ function App() {
       rotations.concat({
         type: rotationType.continueStart,
         rotationRate,
-        rotationNumber: rotationNumberInputed,
+        rotationNumber: Number(rotationNumberInputed),
       })
     );
 
@@ -156,7 +201,7 @@ function App() {
   }
 
   function getRotationsTextForCopyToClickboard() {
-    const dateNowFormated = format(new Date(), "yyyy/MM/dd hh:mm");
+    const dateNowFormated = format(new Date(), "yyyy/MM/dd HH:mm");
     const text = `${dateNowFormated}
 回転率：${rotationRate}, 仕事量：${rotationUnitPrice}円×${totalRotationNumber}回(${_getWorkAmount()}円)`;
     return text;
@@ -176,7 +221,7 @@ function App() {
 
   function resetStart() {
     if (isResetStarted()) {
-      console.log("既にリセットスタートされています");
+      alert("既にリセットスタートされています");
       return;
     }
     if (rotationNumberInputed === "") {
@@ -251,9 +296,19 @@ function App() {
                 <FormControl value={border} onChange={changeBorder} />
               </InputGroup>
             </Row>
+            <Row>
+              <InputGroup size="sm">
+                <InputGroup.Prepend>
+                  <InputGroup.Text>交換率</InputGroup.Text>
+                </InputGroup.Prepend>
+                <FormControl value={exchangeRate} onChange={changeExchangeRate} />
+              </InputGroup>
+            </Row>
           </Col>
           <Col>
-            <ListGroup>{$rotations}</ListGroup>
+            <ListGroup className="rotationList" ref={rotationListRef}>
+              {$rotations}
+            </ListGroup>
           </Col>
         </Row>
       </Container>
