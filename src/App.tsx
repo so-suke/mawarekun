@@ -253,12 +253,15 @@ function App() {
   }
 
   function getRotationsTextForCopyToClickboard() {
-    const dateNowFormated = format(new Date(), "yyyy/MM/dd HH:mm");
-    // const text = [`${dateNowFormated}`, `ボーダー：${border}`, `回転率：${rotationRate}`, `回転単価：${rotationUnitPrice}`, `総回転数：${totalRotationNumber}`, `${_getWorkAmount()}`].join(
+    const now = new Date();
+    const dateFormattedStart = format(now, "yyyy/MM/dd");
+    const timeFormattedStart = localStorage.getItem("startTime");
+    const timeFormattedNow = format(now, "HH:mm");
+    // const text = [`${dateNowFormatted}`, `ボーダー：${border}`, `回転率：${rotationRate}`, `回転単価：${rotationUnitPrice}`, `総回転数：${totalRotationNumber}`, `${_getWorkAmount()}`].join(
     //   "\t"
     // );
     const text = [
-      `${dateNowFormated}`,
+      `${dateFormattedStart} ${timeFormattedStart}〜${timeFormattedNow}`,
       `ボーダー：${border}`,
       `回転率：${rotationRate}`,
       `回転単価：${rotationUnitPrice}`,
@@ -292,6 +295,8 @@ function App() {
     );
 
     clearRotationNumberInputed();
+
+    localStorage.setItem("startTime", format(new Date(), "HH:mm"));
   }
 
   return (
