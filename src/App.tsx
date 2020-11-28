@@ -5,8 +5,6 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Container, Row, Col, FormControl, Button, ListGroup, InputGroup } from "react-bootstrap";
 import { format } from "date-fns";
 
-import { getdoubleDigestNumber } from "./utils/number";
-
 const ShrinkNameButton = styled(Button)`
   font-size: 0.4rem;
 `;
@@ -63,8 +61,10 @@ function App() {
     // ローカルストレージに「回転配列」があるか確認
     const investmentCntGettedFromLocalStorage = localStorage.getItem("investmentCnt");
     const rotationsGettedFromLocalStorage = localStorage.getItem("rotations");
+    const borderGettedFromLocalStorage = localStorage.getItem("border");
     if (investmentCntGettedFromLocalStorage === null) return;
     if (rotationsGettedFromLocalStorage === null) return;
+    if (borderGettedFromLocalStorage === null) return;
 
     const rotationsParsed = JSON.parse(rotationsGettedFromLocalStorage);
 
@@ -78,6 +78,7 @@ function App() {
     setTotalRotationNumber(rotationNumberTotalCalculatted);
     setInvestmentCnt(Number(investmentCntGettedFromLocalStorage));
     setRotations(rotationsParsed);
+    setBorder(borderGettedFromLocalStorage);
   }, []);
 
   useEffect(() => {
@@ -88,6 +89,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem("investmentCnt", "" + investmentCnt);
   }, [investmentCnt]);
+
+  useEffect(() => {
+    localStorage.setItem("border", border);
+  }, [border]);
 
   function isResetStarted() {
     return rotations.length > 0 && rotations[0].type === rotationType.resetStart;
@@ -193,19 +198,17 @@ function App() {
 
     const rotationNumberLast = rotations[rotations.length - 1].rotationNumber;
 
-    let rotationNumberInputedClone = rotationNumberInputed;
+    let rotationNumberInputedClone: number = Number(rotationNumberInputed);
 
-    // 入力された回転数が3桁未満の場合かつ前回の回転数が3桁のとき
-    if (rotationNumberInputedClone.length < 3 && String(rotations[rotations.length - 1].rotationNumber).length === 3) {
-      // 前回の回転数を百の位の数とそれ以外に分ける
-      const numberOfHundreds = String(rotations[rotations.length - 1].rotationNumber).slice(0, 1);
-      const lastTwoDigits = String(rotations[rotations.length - 1].rotationNumber).slice(1, 3);
-      // 下2桁よりも回転数が大きければ、百の位の数+回転数としたものを回転数とする。
-      if (Number(rotationNumberInputedClone) > Number(lastTwoDigits)) {
-        rotationNumberInputedClone = numberOfHundreds + getdoubleDigestNumber(Number(rotationNumberInputedClone));
-      } else {
-        rotationNumberInputedClone = String(Number(numberOfHundreds) + 1) + getdoubleDigestNumber(Number(rotationNumberInputedClone));
-      }
+    // 回転数の短縮入力：ひとまず回転数が3桁以下の場合のみ対応
+    if (String(rotationNumberInputedClone).length < 3 && String(rotations[rotations.length - 1].rotationNumber).length > 1) {
+      const convertToThreeDigits: string = ("000" + rotations[rotations.length - 1].rotationNumber).slice(-3);
+      const lastTwoDigits: number = Number(String(rotations[rotations.length - 1].rotationNumber).slice(1, 3));
+      const baseNumberOfHundreds: number =
+        rotationNumberInputedClone > lastTwoDigits ? Number(convertToThreeDigits[0]) : Number(convertToThreeDigits[0]) + 1;
+
+      const baseNumber: number = baseNumberOfHundreds * 100;
+      rotationNumberInputedClone += baseNumber;
     }
 
     const rotationNumberDiffFromLast = Number(rotationNumberInputedClone) - rotationNumberLast;
@@ -251,8 +254,17 @@ function App() {
 
   function getRotationsTextForCopyToClickboard() {
     const dateNowFormated = format(new Date(), "yyyy/MM/dd HH:mm");
-    const text = `${dateNowFormated}
-回転率：${rotationRate}, 仕事量：${rotationUnitPrice}円×${totalRotationNumber}回(${_getWorkAmount()}円)`;
+    // const text = [`${dateNowFormated}`, `ボーダー：${border}`, `回転率：${rotationRate}`, `回転単価：${rotationUnitPrice}`, `総回転数：${totalRotationNumber}`, `${_getWorkAmount()}`].join(
+    //   "\t"
+    // );
+    const text = [
+      `${dateNowFormated}`,
+      `ボーダー：${border}`,
+      `回転率：${rotationRate}`,
+      `回転単価：${rotationUnitPrice}`,
+      `総回転数：${totalRotationNumber}`,
+      `${_getWorkAmount()}`,
+    ].join("	");
     return text;
   }
 
@@ -349,7 +361,7 @@ function App() {
             </Row>
 
             <Row>
-              <Button className="mt-5" variant="primary" onClick={() => deleteAllRotation()}>
+              <Button className="allDeteleBtn" variant="primary" onClick={() => deleteAllRotation()}>
                 全行削除
               </Button>
             </Row>
