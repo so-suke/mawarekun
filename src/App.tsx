@@ -31,7 +31,7 @@ function App() {
   const [border, setBorder] = useState<string>("18.0");
   const [storeNames, setStoreNames] = useState<string[]>([]);
   const [storeNamesExchangeRatesMap, setStoreNamesExchangeRatesMap] = useState(new Map());
-  const [exchangeRate, setExchangeRate] = useState<string>("4");
+  const [exchangeRate, setExchangeRate] = useState<string>("");
 
   const rotationListRef = useRef<HTMLDivElement>(null);
   const selectStoreRef = useRef<HTMLSelectElement>(document.createElement("select"));
