@@ -9,6 +9,10 @@ const ShrinkNameButton = styled(Button)`
   font-size: 0.4rem;
 `;
 
+// TITLES
+const SELECT_STORE_TITLE: string = "店名を選択して下さい。";
+
+// 交換率
 const EXCHANGE_RATE_BASE = 4;
 
 type RotationType = {
@@ -25,9 +29,12 @@ function App() {
   const [investmentCnt, setInvestmentCnt] = useState(0);
   const [totalRotationNumber, setTotalRotationNumber] = useState(0);
   const [border, setBorder] = useState<string>("18.0");
+  const [stores, setStores] = useState<string[]>([]);
+  const [storesExchangeRatesMap, setStoresExchangeRatesMap] = useState(new Map());
   const [exchangeRate, setExchangeRate] = useState<string>("4");
 
   const rotationListRef = useRef<HTMLDivElement>(null);
+  const selectStoreRef = useRef<HTMLSelectElement>(document.createElement("select"));
 
   const replenishmentAmount = 500;
   const ratioOfReplenishmentAmountToThousandYen = 1000 / replenishmentAmount;
@@ -38,8 +45,19 @@ function App() {
     resetStart: "resetStart",
   };
 
+  // 初期値として、それぞれの「店名と交換率」を設定する。
+  const initStoresExchangeRates = () => {
+    const storesInit = ["DoruNakano", "LiNakano", "NtNakano"];
+    setStores(storesInit);
+    setStoresExchangeRatesMap(storesExchangeRatesMap.set(storesInit[0], 4.38));
+    setStoresExchangeRatesMap(storesExchangeRatesMap.set(storesInit[1], 4));
+    setStoresExchangeRatesMap(storesExchangeRatesMap.set(storesInit[2], 4));
+  };
+
   // 初回描画時に実行
   useEffect(() => {
+    // 初期値として、それぞれの「店名と交換率」を設定する。
+    initStoresExchangeRates();
     // ローカルストレージに「回転配列」があるか確認
     const investmentCntGettedFromLocalStorage = localStorage.getItem("investmentCnt");
     const rotationsGettedFromLocalStorage = localStorage.getItem("rotations");
@@ -81,6 +99,13 @@ function App() {
   }
 
   // change系
+  function changeStoresSelect(event: React.ChangeEvent<HTMLInputElement>) {
+    // 店名に対応した、交換率を設定する。
+    const storeName = event.target.value;
+    const storeExchangeRate = storesExchangeRatesMap.get(storeName);
+    setExchangeRate(storeExchangeRate);
+  }
+
   function changeBorder(event: React.ChangeEvent<HTMLInputElement>) {
     setBorder(event.target.value);
   }
@@ -263,10 +288,18 @@ function App() {
       alert("既にリセットスタートされています");
       return;
     }
+
     if (rotationNumberInputed === "") {
       alert(`回転数を入力しましょう`);
       return;
     }
+
+    // 選択肢：店名の値が初期値の場合、警告を出す。
+    if (selectStoreRef.current.value === "") {
+      alert(`店名を選択して下さい。`);
+      return;
+    }
+    
     setRotations(
       rotations.concat({
         type: rotationType.resetStart,
@@ -282,6 +315,25 @@ function App() {
   }
 
   // DOMの定義
+
+  // 店名の選択肢
+  const $stores = (() => {
+    const $doms = [
+      <option key={"defaultValue"} value="" disabled hidden>
+        {SELECT_STORE_TITLE}
+      </option>,
+    ];
+    const $stores = stores.map((store) => {
+      return (
+        <option key={store} value={store}>
+          {store}
+        </option>
+      );
+    });
+
+    const $domsConcated = [$doms, ...$stores];
+    return $domsConcated;
+  })();
 
   const $numberButtons = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "0"].map((number) => (
     <Button key={number} variant="primary" className="col-4" onClick={() => setRotationNumberInputed(rotationNumberInputed + number)}>
@@ -363,10 +415,8 @@ function App() {
                 <InputGroup.Prepend>
                   <InputGroup.Text>店名</InputGroup.Text>
                 </InputGroup.Prepend>
-                <Form.Control as="select">
-                  <option>mandoruNakano</option>
-                  <option>liNakano</option>
-                  <option>ntNakano</option>
+                <Form.Control as="select" defaultValue="" onChange={changeStoresSelect} ref={selectStoreRef}>
+                  {$stores}
                 </Form.Control>
               </InputGroup>
             </Row>
