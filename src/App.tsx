@@ -29,8 +29,8 @@ function App() {
   const [investmentCnt, setInvestmentCnt] = useState(0);
   const [totalRotationNumber, setTotalRotationNumber] = useState(0);
   const [border, setBorder] = useState<string>("18.0");
-  const [stores, setStores] = useState<string[]>([]);
-  const [storesExchangeRatesMap, setStoresExchangeRatesMap] = useState(new Map());
+  const [storeNames, setStoreNames] = useState<string[]>([]);
+  const [storeNamesExchangeRatesMap, setStoreNamesExchangeRatesMap] = useState(new Map());
   const [exchangeRate, setExchangeRate] = useState<string>("4");
 
   const rotationListRef = useRef<HTMLDivElement>(null);
@@ -46,18 +46,18 @@ function App() {
   };
 
   // 初期値として、それぞれの「店名と交換率」を設定する。
-  const initStoresExchangeRates = () => {
-    const storesInit = ["DoruNakano", "LiNakano", "NtNakano"];
-    setStores(storesInit);
-    setStoresExchangeRatesMap(storesExchangeRatesMap.set(storesInit[0], 4.38));
-    setStoresExchangeRatesMap(storesExchangeRatesMap.set(storesInit[1], 4));
-    setStoresExchangeRatesMap(storesExchangeRatesMap.set(storesInit[2], 4));
+  const initStoreNamesExchangeRates = () => {
+    const storeNamesInit = ["DoruNakano", "LiNakano", "NtNakano"];
+    setStoreNames(storeNamesInit);
+    setStoreNamesExchangeRatesMap(storeNamesExchangeRatesMap.set(storeNamesInit[0], 4.38));
+    setStoreNamesExchangeRatesMap(storeNamesExchangeRatesMap.set(storeNamesInit[1], 4));
+    setStoreNamesExchangeRatesMap(storeNamesExchangeRatesMap.set(storeNamesInit[2], 4));
   };
 
   // 初回描画時に実行
   useEffect(() => {
     // 初期値として、それぞれの「店名と交換率」を設定する。
-    initStoresExchangeRates();
+    initStoreNamesExchangeRates();
     // ローカルストレージに「回転配列」があるか確認
     const investmentCntGettedFromLocalStorage = localStorage.getItem("investmentCnt");
     const rotationsGettedFromLocalStorage = localStorage.getItem("rotations");
@@ -99,10 +99,10 @@ function App() {
   }
 
   // change系
-  function changeStoresSelect(event: React.ChangeEvent<HTMLInputElement>) {
+  function changeStoreNamesSelect(event: React.ChangeEvent<HTMLInputElement>) {
     // 店名に対応した、交換率を設定する。
     const storeName = event.target.value;
-    const storeExchangeRate = storesExchangeRatesMap.get(storeName);
+    const storeExchangeRate = storeNamesExchangeRatesMap.get(storeName);
     setExchangeRate(storeExchangeRate);
   }
 
@@ -299,7 +299,7 @@ function App() {
       alert(`店名を選択して下さい。`);
       return;
     }
-    
+
     setRotations(
       rotations.concat({
         type: rotationType.resetStart,
@@ -317,13 +317,13 @@ function App() {
   // DOMの定義
 
   // 店名の選択肢
-  const $stores = (() => {
+  const $storeNames = (() => {
     const $doms = [
       <option key={"defaultValue"} value="" disabled hidden>
         {SELECT_STORE_TITLE}
       </option>,
     ];
-    const $stores = stores.map((store) => {
+    const $storeNames = storeNames.map((store) => {
       return (
         <option key={store} value={store}>
           {store}
@@ -331,7 +331,7 @@ function App() {
       );
     });
 
-    const $domsConcated = [$doms, ...$stores];
+    const $domsConcated = [$doms, ...$storeNames];
     return $domsConcated;
   })();
 
@@ -415,8 +415,8 @@ function App() {
                 <InputGroup.Prepend>
                   <InputGroup.Text>店名</InputGroup.Text>
                 </InputGroup.Prepend>
-                <Form.Control as="select" defaultValue="" onChange={changeStoresSelect} ref={selectStoreRef}>
-                  {$stores}
+                <Form.Control as="select" defaultValue="" onChange={changeStoreNamesSelect} ref={selectStoreRef}>
+                  {$storeNames}
                 </Form.Control>
               </InputGroup>
             </Row>
