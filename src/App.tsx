@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import styled from "styled-components";
 
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Container, Row, Col, FormControl, Button, ListGroup, InputGroup } from "react-bootstrap";
+import { Container, Row, Col, FormControl, Form, Button, ListGroup, InputGroup } from "react-bootstrap";
 import { format } from "date-fns";
 
 const ShrinkNameButton = styled(Button)`
@@ -37,24 +37,6 @@ function App() {
     continueStart: "continueStart",
     resetStart: "resetStart",
   };
-
-  const $numberButtons = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "0"].map((number) => (
-    <Button key={number} variant="primary" className="col-4" onClick={() => setRotationNumberInputed(rotationNumberInputed + number)}>
-      {number}
-    </Button>
-  ));
-
-  const $rotations = rotations.map((rotation, index) => {
-    let content = "";
-    if (rotation.type === rotationType.resetStart) {
-      content = `${rotation.rotationNumber} --start--`;
-    } else if (rotation.type === rotationType.continueStart) {
-      content = `${rotation.rotationNumber} > start`;
-    } else if (rotation.type === rotationType.normal) {
-      content = `${rotation.rotationNumber} ${rotation.rotationRateMostRecent} ${rotation.rotationRate}`;
-    }
-    return <ListGroup.Item key={index}>{content}</ListGroup.Item>;
-  });
 
   // 初回描画時に実行
   useEffect(() => {
@@ -299,6 +281,26 @@ function App() {
     localStorage.setItem("startTime", format(new Date(), "HH:mm"));
   }
 
+  // DOMの定義
+
+  const $numberButtons = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "0"].map((number) => (
+    <Button key={number} variant="primary" className="col-4" onClick={() => setRotationNumberInputed(rotationNumberInputed + number)}>
+      {number}
+    </Button>
+  ));
+
+  const $rotations = rotations.map((rotation, index) => {
+    let content = "";
+    if (rotation.type === rotationType.resetStart) {
+      content = `${rotation.rotationNumber} --start--`;
+    } else if (rotation.type === rotationType.continueStart) {
+      content = `${rotation.rotationNumber} > start`;
+    } else if (rotation.type === rotationType.normal) {
+      content = `${rotation.rotationNumber} ${rotation.rotationRateMostRecent} ${rotation.rotationRate}`;
+    }
+    return <ListGroup.Item key={index}>{content}</ListGroup.Item>;
+  });
+
   return (
     <div className="App">
       <Container className="pt-3">
@@ -354,6 +356,18 @@ function App() {
                   <InputGroup.Text>ボーダー</InputGroup.Text>
                 </InputGroup.Prepend>
                 <FormControl value={border} onChange={changeBorder} />
+              </InputGroup>
+            </Row>
+            <Row>
+              <InputGroup size="sm">
+                <InputGroup.Prepend>
+                  <InputGroup.Text>店名</InputGroup.Text>
+                </InputGroup.Prepend>
+                <Form.Control as="select">
+                  <option>mandoruNakano</option>
+                  <option>liNakano</option>
+                  <option>ntNakano</option>
+                </Form.Control>
               </InputGroup>
             </Row>
             <Row>
