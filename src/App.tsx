@@ -30,7 +30,7 @@ function App() {
   const [totalRotationNumber, setTotalRotationNumber] = useState(0);
   const [border, setBorder] = useState<string>("18.0");
   const [storeNames, setStoreNames] = useState<string[]>([]);
-  const [storeNameSelected, setStoreNameSelected] = useState("");
+  const [storeName, setStoreName] = useState("");
   const [machineName, setMachineName] = useState("");
 
   const [storeNamesExchangeRatesMap, setStoreNamesExchangeRatesMap] = useState(new Map());
@@ -63,20 +63,20 @@ function App() {
     initStoreNamesExchangeRates();
 
     // ローカルストレージから各値を取得。
-    const storeNameSelectedGettedFromLocalStorage = localStorage.getItem("storeNameSelected");
-    const machineNameSelectedGettedFromLocalStorage = localStorage.getItem("machineName");
+    const storeNameGettedFromLocalStorage = localStorage.getItem("storeName");
+    const machineNameGettedFromLocalStorage = localStorage.getItem("machineName");
     const investmentCntGettedFromLocalStorage = localStorage.getItem("investmentCnt");
     const rotationsGettedFromLocalStorage = localStorage.getItem("rotations");
     const borderGettedFromLocalStorage = localStorage.getItem("border");
 
-    if (storeNameSelectedGettedFromLocalStorage === null) return;
-    if (machineNameSelectedGettedFromLocalStorage === null) return;
+    if (storeNameGettedFromLocalStorage === null) return;
+    if (machineNameGettedFromLocalStorage === null) return;
     if (investmentCntGettedFromLocalStorage === null) return;
     if (rotationsGettedFromLocalStorage === null) return;
     if (borderGettedFromLocalStorage === null) return;
 
-    setStoreNameSelected(storeNameSelectedGettedFromLocalStorage);
-    setMachineName(machineNameSelectedGettedFromLocalStorage)
+    setStoreName(storeNameGettedFromLocalStorage);
+    setMachineName(machineNameGettedFromLocalStorage)
 
     const rotationsParsed = JSON.parse(rotationsGettedFromLocalStorage);
 
@@ -109,12 +109,12 @@ function App() {
 
   useEffect(() => {
     // 選択肢の店名が変更されたら、対応した交換率へ変更する。
-    const storeExchangeRate = storeNamesExchangeRatesMap.get(storeNameSelected);
+    const storeExchangeRate = storeNamesExchangeRatesMap.get(storeName);
     setExchangeRate(storeExchangeRate);
 
     // ページ再読込に対応するため
-    localStorage.setItem("storeNameSelected", storeNameSelected);
-  }, [storeNameSelected]);
+    localStorage.setItem("storeName", storeName);
+  }, [storeName]);
 
   function isResetStarted() {
     return rotations.length > 0 && rotations[0].type === rotationType.resetStart;
@@ -122,7 +122,7 @@ function App() {
 
   // change系
   function changeStoreNamesSelect(event: React.ChangeEvent<HTMLInputElement>) {
-    setStoreNameSelected(event.target.value);
+    setStoreName(event.target.value);
   }
 
   function changeBorder(event: React.ChangeEvent<HTMLInputElement>) {
@@ -152,7 +152,7 @@ function App() {
     setRotationNumberInputed("");
   }
 
-  function _getWorkAmount() {
+  function getWorkAmount() {
     return (rotationUnitPrice * totalRotationNumber).toFixed(0);
   }
 
@@ -302,9 +302,9 @@ function App() {
       `回転率：${rotationRate}`,
       `回転単価：${rotationUnitPrice}`,
       `総回転数：${totalRotationNumber}`,
-      `${_getWorkAmount()}`,
+      `${getWorkAmount()}`,
       `${machineName}`,
-      `${storeNameSelected}`,
+      `${storeName}`,
     ].join(delimiter);
   }
 
@@ -395,7 +395,7 @@ function App() {
               総回転数：<span>{totalRotationNumber}</span>
             </p>
             <p className="mb-0">
-              仕事量：<span>{_getWorkAmount()}</span>
+              仕事量：<span>{getWorkAmount()}</span>
             </p>
 
             <Row>
@@ -445,7 +445,7 @@ function App() {
                 <InputGroup.Prepend>
                   <InputGroup.Text>店名</InputGroup.Text>
                 </InputGroup.Prepend>
-                <Form.Control as="select" value={storeNameSelected} onChange={changeStoreNamesSelect} ref={selectStoreRef}>
+                <Form.Control as="select" value={storeName} onChange={changeStoreNamesSelect} ref={selectStoreRef}>
                   {$storeNames}
                 </Form.Control>
               </InputGroup>
