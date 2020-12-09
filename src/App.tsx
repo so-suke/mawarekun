@@ -31,6 +31,7 @@ function App() {
   const [border, setBorder] = useState<string>("18.0");
   const [storeNames, setStoreNames] = useState<string[]>([]);
   const [storeNameSelected, setStoreNameSelected] = useState("");
+  const [machineName, setMachineName] = useState("");
 
   const [storeNamesExchangeRatesMap, setStoreNamesExchangeRatesMap] = useState(new Map());
   const [exchangeRate, setExchangeRate] = useState<string>("");
@@ -62,14 +63,20 @@ function App() {
     initStoreNamesExchangeRates();
 
     // ローカルストレージから各値を取得。
+    const storeNameSelectedGettedFromLocalStorage = localStorage.getItem("storeNameSelected");
+    const machineNameSelectedGettedFromLocalStorage = localStorage.getItem("machineName");
     const investmentCntGettedFromLocalStorage = localStorage.getItem("investmentCnt");
     const rotationsGettedFromLocalStorage = localStorage.getItem("rotations");
     const borderGettedFromLocalStorage = localStorage.getItem("border");
-    const storeNameSelectedGettedFromLocalStorage = localStorage.getItem("storeNameSelected");
+
+    if (storeNameSelectedGettedFromLocalStorage === null) return;
+    if (machineNameSelectedGettedFromLocalStorage === null) return;
     if (investmentCntGettedFromLocalStorage === null) return;
     if (rotationsGettedFromLocalStorage === null) return;
     if (borderGettedFromLocalStorage === null) return;
-    if (storeNameSelectedGettedFromLocalStorage === null) return;
+
+    setStoreNameSelected(storeNameSelectedGettedFromLocalStorage);
+    setMachineName(machineNameSelectedGettedFromLocalStorage)
 
     const rotationsParsed = JSON.parse(rotationsGettedFromLocalStorage);
 
@@ -85,8 +92,6 @@ function App() {
     setRotations(rotationsParsed);
     setBorder(borderGettedFromLocalStorage);
 
-    // 選択肢：店名の初期値を設定する。
-    setStoreNameSelected(storeNameSelectedGettedFromLocalStorage);
   }, []);
 
   useEffect(() => {
@@ -122,6 +127,13 @@ function App() {
 
   function changeBorder(event: React.ChangeEvent<HTMLInputElement>) {
     setBorder(event.target.value);
+  }
+
+  // 機種名の変更
+  function changeMachineName(event: React.ChangeEvent<HTMLInputElement>) {
+    const machineName = event.target.value
+    setMachineName(machineName);
+    localStorage.setItem("machineName", machineName);
   }
 
   function changeExchangeRate(event: React.ChangeEvent<HTMLInputElement>) {
@@ -273,28 +285,32 @@ function App() {
     clearRotationNumberInputed();
   }
 
-  function getRotationsTextForCopyToClickboard() {
+  // スプレッドシートへのペースト用テキストを取得。
+  function getWorkRecordForSpreadSheet(): string {
     const now = new Date();
     const dateFormattedStart = format(now, "yyyy/MM/dd");
     const timeFormattedStart = localStorage.getItem("startTime");
     const timeFormattedNow = format(now, "HH:mm");
-    // const text = [`${dateNowFormatted}`, `ボーダー：${border}`, `回転率：${rotationRate}`, `回転単価：${rotationUnitPrice}`, `総回転数：${totalRotationNumber}`, `${_getWorkAmount()}`].join(
-    //   "\t"
-    // );
-    const text = [
+
+    const delimiter = "	";
+    // 下記でも動くようであれば、後々こちらに変更する。
+    // const delimiter = "\t";
+
+    return [
       `${dateFormattedStart} ${timeFormattedStart}〜${timeFormattedNow}`,
       `ボーダー：${border}`,
       `回転率：${rotationRate}`,
       `回転単価：${rotationUnitPrice}`,
       `総回転数：${totalRotationNumber}`,
       `${_getWorkAmount()}`,
-    ].join("	");
-    return text;
+      `${machineName}`,
+      `${storeNameSelected}`,
+    ].join(delimiter);
   }
 
-  function setClipboard() {
-    const text = getRotationsTextForCopyToClickboard();
-    navigator.clipboard.writeText(text);
+  // 稼働記録をコピー
+  function copyWorkRecord() {
+    navigator.clipboard.writeText(getWorkRecordForSpreadSheet());
   }
 
   function resetStart() {
@@ -349,14 +365,6 @@ function App() {
     return $domsConcated;
   })();
 
-  const $SelectStoreName = () => {
-    return (
-      <Form.Control as="select" defaultValue={storeNameSelected} onChange={changeStoreNamesSelect} ref={selectStoreRef}>
-        {$storeNames}
-      </Form.Control>
-    );
-  };
-
   const $numberButtons = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "0"].map((number) => (
     <Button key={number} variant="primary" className="col-4" onClick={() => setRotationNumberInputed(rotationNumberInputed + number)}>
       {number}
@@ -391,7 +399,7 @@ function App() {
             </p>
 
             <Row>
-              <Button className="mr-1 mb-1" variant="primary" onClick={() => setClipboard()}>
+              <Button className="mr-1 mb-1" variant="primary" onClick={() => copyWorkRecord()}>
                 コピー
               </Button>
               <Button className="mb-1" variant="primary" onClick={() => deleteOneRotation()}>
@@ -448,6 +456,14 @@ function App() {
                   <InputGroup.Text>交換率</InputGroup.Text>
                 </InputGroup.Prepend>
                 <FormControl value={exchangeRate} onChange={changeExchangeRate} />
+              </InputGroup>
+            </Row>
+            <Row>
+              <InputGroup size="sm">
+                <InputGroup.Prepend>
+                  <InputGroup.Text>機種名</InputGroup.Text>
+                </InputGroup.Prepend>
+                <FormControl value={machineName} onChange={changeMachineName} />
               </InputGroup>
             </Row>
 
