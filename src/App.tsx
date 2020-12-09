@@ -30,6 +30,8 @@ function App() {
   const [totalRotationNumber, setTotalRotationNumber] = useState(0);
   const [border, setBorder] = useState<string>("18.0");
   const [storeNames, setStoreNames] = useState<string[]>([]);
+  const [storeNameSelected, setStoreNameSelected] = useState("");
+
   const [storeNamesExchangeRatesMap, setStoreNamesExchangeRatesMap] = useState(new Map());
   const [exchangeRate, setExchangeRate] = useState<string>("");
 
@@ -58,13 +60,16 @@ function App() {
   useEffect(() => {
     // 初期値として、それぞれの「店名と交換率」を設定する。
     initStoreNamesExchangeRates();
-    // ローカルストレージに「回転配列」があるか確認
+
+    // ローカルストレージから各値を取得。
     const investmentCntGettedFromLocalStorage = localStorage.getItem("investmentCnt");
     const rotationsGettedFromLocalStorage = localStorage.getItem("rotations");
     const borderGettedFromLocalStorage = localStorage.getItem("border");
+    const storeNameSelectedGettedFromLocalStorage = localStorage.getItem("storeNameSelected");
     if (investmentCntGettedFromLocalStorage === null) return;
     if (rotationsGettedFromLocalStorage === null) return;
     if (borderGettedFromLocalStorage === null) return;
+    if (storeNameSelectedGettedFromLocalStorage === null) return;
 
     const rotationsParsed = JSON.parse(rotationsGettedFromLocalStorage);
 
@@ -79,6 +84,9 @@ function App() {
     setInvestmentCnt(Number(investmentCntGettedFromLocalStorage));
     setRotations(rotationsParsed);
     setBorder(borderGettedFromLocalStorage);
+
+    // 選択肢：店名の初期値を設定する。
+    setStoreNameSelected(storeNameSelectedGettedFromLocalStorage);
   }, []);
 
   useEffect(() => {
@@ -94,16 +102,22 @@ function App() {
     localStorage.setItem("border", border);
   }, [border]);
 
+  useEffect(() => {
+    // 選択肢の店名が変更されたら、対応した交換率へ変更する。
+    const storeExchangeRate = storeNamesExchangeRatesMap.get(storeNameSelected);
+    setExchangeRate(storeExchangeRate);
+
+    // ページ再読込に対応するため
+    localStorage.setItem("storeNameSelected", storeNameSelected);
+  }, [storeNameSelected]);
+
   function isResetStarted() {
     return rotations.length > 0 && rotations[0].type === rotationType.resetStart;
   }
 
   // change系
   function changeStoreNamesSelect(event: React.ChangeEvent<HTMLInputElement>) {
-    // 店名に対応した、交換率を設定する。
-    const storeName = event.target.value;
-    const storeExchangeRate = storeNamesExchangeRatesMap.get(storeName);
-    setExchangeRate(storeExchangeRate);
+    setStoreNameSelected(event.target.value);
   }
 
   function changeBorder(event: React.ChangeEvent<HTMLInputElement>) {
@@ -335,6 +349,14 @@ function App() {
     return $domsConcated;
   })();
 
+  const $SelectStoreName = () => {
+    return (
+      <Form.Control as="select" defaultValue={storeNameSelected} onChange={changeStoreNamesSelect} ref={selectStoreRef}>
+        {$storeNames}
+      </Form.Control>
+    );
+  };
+
   const $numberButtons = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "0"].map((number) => (
     <Button key={number} variant="primary" className="col-4" onClick={() => setRotationNumberInputed(rotationNumberInputed + number)}>
       {number}
@@ -415,7 +437,7 @@ function App() {
                 <InputGroup.Prepend>
                   <InputGroup.Text>店名</InputGroup.Text>
                 </InputGroup.Prepend>
-                <Form.Control as="select" defaultValue="" onChange={changeStoreNamesSelect} ref={selectStoreRef}>
+                <Form.Control as="select" value={storeNameSelected} onChange={changeStoreNamesSelect} ref={selectStoreRef}>
                   {$storeNames}
                 </Form.Control>
               </InputGroup>
