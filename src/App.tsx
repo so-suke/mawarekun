@@ -308,10 +308,10 @@ function App() {
     axios
       .post(REST_URL_SPREADSHEET, params)
       .then(function (response: any) {
-        console.log(response);
+        alert('書込が成功しました。')
       })
       .catch(function (error: any) {
-        console.log(error);
+        alert(error);
       });
   }
 
@@ -493,8 +493,8 @@ function App() {
               </InputGroup>
             </Row>
             <Row>
-              <Button className="mr-1 mb-1" variant="primary" onClick={() => writeWorkRecordToSpreadsheet()}>
-                スプレッドシート書込
+              <Button className="mt-5" variant="primary" onClick={() => writeWorkRecordToSpreadsheet()}>
+                シート書込
               </Button>
             </Row>
 
