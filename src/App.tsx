@@ -4,6 +4,7 @@ import styled from "styled-components";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Container, Row, Col, FormControl, Form, Button, ListGroup, InputGroup } from "react-bootstrap";
 import { format } from "date-fns";
+const axios = require("axios").default;
 
 const ShrinkNameButton = styled(Button)`
   font-size: 0.4rem;
@@ -14,6 +15,9 @@ const SELECT_STORE_TITLE: string = "店名を選択して下さい。";
 
 // 交換率
 const EXCHANGE_RATE_BASE = 4;
+
+// スプレッドシートREST_URL
+const REST_URL_SPREADSHEET = "https://script.google.com/macros/s/AKfycbwAEFQ6VWnrJ67EjQiYd8WeEv0D2ogBpV2GYDgxucx9C5gf1Dmd/exec";
 
 type RotationType = {
   type: string;
@@ -76,7 +80,7 @@ function App() {
     if (borderGettedFromLocalStorage === null) return;
 
     setStoreName(storeNameGettedFromLocalStorage);
-    setMachineName(machineNameGettedFromLocalStorage)
+    setMachineName(machineNameGettedFromLocalStorage);
 
     const rotationsParsed = JSON.parse(rotationsGettedFromLocalStorage);
 
@@ -91,7 +95,6 @@ function App() {
     setInvestmentCnt(Number(investmentCntGettedFromLocalStorage));
     setRotations(rotationsParsed);
     setBorder(borderGettedFromLocalStorage);
-
   }, []);
 
   useEffect(() => {
@@ -131,7 +134,7 @@ function App() {
 
   // 機種名の変更
   function changeMachineName(event: React.ChangeEvent<HTMLInputElement>) {
-    const machineName = event.target.value
+    const machineName = event.target.value;
     setMachineName(machineName);
     localStorage.setItem("machineName", machineName);
   }
@@ -283,6 +286,33 @@ function App() {
     );
 
     clearRotationNumberInputed();
+  }
+
+  // スプレッドシートへ稼働記録を書き込む
+  function writeWorkRecordToSpreadsheet(): void {
+    const now = new Date();
+    const dateFormattedStart = format(now, "yyyy/MM/dd");
+    const timeFormattedStart = localStorage.getItem("startTime");
+    const timeFormattedNow = format(now, "HH:mm");
+
+    const params = new URLSearchParams();
+    params.append("date", `${dateFormattedStart} ${timeFormattedStart}〜${timeFormattedNow}`);
+    params.append("border", `ボーダー：${border}`);
+    params.append("rotationRate", `回転率：${rotationRate}`);
+    params.append("rotationUnitPrice", `回転単価：${rotationUnitPrice}`);
+    params.append("totalRotationNumber", `総回転数：${totalRotationNumber}`);
+    params.append("workAmount", `${getWorkAmount()}`);
+    params.append("machineName", `${machineName}`);
+    params.append("storeName", `${storeName}`);
+
+    axios
+      .post(REST_URL_SPREADSHEET, params)
+      .then(function (response: any) {
+        console.log(response);
+      })
+      .catch(function (error: any) {
+        console.log(error);
+      });
   }
 
   // スプレッドシートへのペースト用テキストを取得。
@@ -451,12 +481,8 @@ function App() {
               </InputGroup>
             </Row>
             <Row>
-              <InputGroup size="sm">
-                <InputGroup.Prepend>
-                  <InputGroup.Text>交換率</InputGroup.Text>
-                </InputGroup.Prepend>
-                <FormControl value={exchangeRate} onChange={changeExchangeRate} />
-              </InputGroup>
+              <div className="mr-2">交換率:</div>
+              <div>{exchangeRate}</div>
             </Row>
             <Row>
               <InputGroup size="sm">
@@ -465,6 +491,11 @@ function App() {
                 </InputGroup.Prepend>
                 <FormControl value={machineName} onChange={changeMachineName} />
               </InputGroup>
+            </Row>
+            <Row>
+              <Button className="mr-1 mb-1" variant="primary" onClick={() => writeWorkRecordToSpreadsheet()}>
+                スプレッドシート書込
+              </Button>
             </Row>
 
             <Row>
