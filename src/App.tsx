@@ -13,8 +13,11 @@ const ShrinkNameButton = styled(Button)`
 // TITLES
 const SELECT_STORE_TITLE: string = "店名を選択して下さい。";
 
-// 交換率
+// 交換率ベース？
 const EXCHANGE_RATE_BASE = 4;
+
+// ワンプッシュ当たりの金額
+const AMOUNT_ONE_PUSH = 500;
 
 // スプレッドシートREST_URL
 const REST_URL_SPREADSHEET = "https://script.google.com/macros/s/AKfycbwAEFQ6VWnrJ67EjQiYd8WeEv0D2ogBpV2GYDgxucx9C5gf1Dmd/exec";
@@ -36,8 +39,11 @@ function App() {
   const [storeNames, setStoreNames] = useState<string[]>([]);
   const [storeName, setStoreName] = useState("");
   const [machineName, setMachineName] = useState("");
+  const [ballNumberComfirm, setBallNumberComfirm] = useState("");
+  const [remarks, setRemarks] = useState("");
 
   const [storeNamesExchangeRatesMap, setStoreNamesExchangeRatesMap] = useState(new Map());
+
   const [exchangeRate, setExchangeRate] = useState<string>("");
 
   const rotationListRef = useRef<HTMLDivElement>(null);
@@ -69,18 +75,24 @@ function App() {
     // ローカルストレージから各値を取得。
     const storeNameGettedFromLocalStorage = localStorage.getItem("storeName");
     const machineNameGettedFromLocalStorage = localStorage.getItem("machineName");
+    const ballNumberComfirmGettedFromLocalStorage = localStorage.getItem("ballNumberComfirm");
     const investmentCntGettedFromLocalStorage = localStorage.getItem("investmentCnt");
     const rotationsGettedFromLocalStorage = localStorage.getItem("rotations");
     const borderGettedFromLocalStorage = localStorage.getItem("border");
+    const remarksGettedFromLocalStorage = localStorage.getItem("remarks");
 
     if (storeNameGettedFromLocalStorage === null) return;
     if (machineNameGettedFromLocalStorage === null) return;
+    if (ballNumberComfirmGettedFromLocalStorage === null) return;
     if (investmentCntGettedFromLocalStorage === null) return;
     if (rotationsGettedFromLocalStorage === null) return;
     if (borderGettedFromLocalStorage === null) return;
+    if (remarksGettedFromLocalStorage === null) return;
 
     setStoreName(storeNameGettedFromLocalStorage);
     setMachineName(machineNameGettedFromLocalStorage);
+    setBallNumberComfirm(ballNumberComfirmGettedFromLocalStorage);
+    setRemarks(remarksGettedFromLocalStorage);
 
     const rotationsParsed = JSON.parse(rotationsGettedFromLocalStorage);
 
@@ -111,6 +123,14 @@ function App() {
   }, [border]);
 
   useEffect(() => {
+    localStorage.setItem("ballNumberComfirm", ballNumberComfirm);
+  }, [ballNumberComfirm]);
+
+  useEffect(() => {
+    localStorage.setItem("remarks", remarks);
+  }, [remarks]);
+
+  useEffect(() => {
     // 選択肢の店名が変更されたら、対応した交換率へ変更する。
     const storeExchangeRate = storeNamesExchangeRatesMap.get(storeName);
     setExchangeRate(storeExchangeRate);
@@ -137,6 +157,19 @@ function App() {
     const machineName = event.target.value;
     setMachineName(machineName);
     localStorage.setItem("machineName", machineName);
+  }
+
+  // 備考の変更
+  function changeRemarks(event: React.ChangeEvent<HTMLInputElement>) {
+    const remarksInputed = event.target.value;
+    setRemarks(remarksInputed);
+  }
+
+  // 回転数入力ミス防止用玉数の変更
+  // ballNumberComfirm
+  function changeBallNumberComfirm(event: React.ChangeEvent<HTMLInputElement>) {
+    const ballNumberComfirm = event.target.value;
+    setBallNumberComfirm(ballNumberComfirm);
   }
 
   function changeExchangeRate(event: React.ChangeEvent<HTMLInputElement>) {
@@ -196,6 +229,11 @@ function App() {
     }
 
     setRotations(rotationsDeleted);
+
+    // 確認用玉数を計算
+    const storeExchangeRate = storeNamesExchangeRatesMap.get(storeName);
+    const ballNumberOnePush = Number((AMOUNT_ONE_PUSH / storeExchangeRate).toFixed());
+    setBallNumberComfirm(String(Number(ballNumberComfirm) + ballNumberOnePush));
   }
 
   function calcRotationRateFromRotations(rotations: RotationType[]) {
@@ -268,6 +306,11 @@ function App() {
       })
     );
     clearRotationNumberInputed();
+
+    // 確認用玉数を計算
+    const storeExchangeRate = storeNamesExchangeRatesMap.get(storeName);
+    const ballNumberOnePush = Number((AMOUNT_ONE_PUSH / storeExchangeRate).toFixed());
+    setBallNumberComfirm(String(Number(ballNumberComfirm) - ballNumberOnePush));
   }
 
   function continueStart() {
@@ -304,11 +347,12 @@ function App() {
     params.append("workAmount", `${getWorkAmount()}`);
     params.append("machineName", `${machineName}`);
     params.append("storeName", `${storeName}`);
+    params.append("remarks", `${remarks}`);
 
     axios
       .post(REST_URL_SPREADSHEET, params)
       .then(function (response: any) {
-        alert('書込が成功しました。')
+        alert("書込が成功しました。");
       })
       .catch(function (error: any) {
         alert(error);
@@ -335,6 +379,7 @@ function App() {
       `${getWorkAmount()}`,
       `${machineName}`,
       `${storeName}`,
+      `${remarks}`,
     ].join(delimiter);
   }
 
@@ -465,6 +510,14 @@ function App() {
             <Row>
               <InputGroup size="sm">
                 <InputGroup.Prepend>
+                  <InputGroup.Text>確認用玉数</InputGroup.Text>
+                </InputGroup.Prepend>
+                <FormControl value={ballNumberComfirm} onChange={changeBallNumberComfirm} type="number" />
+              </InputGroup>
+            </Row>
+            <Row>
+              <InputGroup size="sm">
+                <InputGroup.Prepend>
                   <InputGroup.Text>ボーダー</InputGroup.Text>
                 </InputGroup.Prepend>
                 <FormControl value={border} onChange={changeBorder} />
@@ -490,6 +543,14 @@ function App() {
                   <InputGroup.Text>機種名</InputGroup.Text>
                 </InputGroup.Prepend>
                 <FormControl value={machineName} onChange={changeMachineName} />
+              </InputGroup>
+            </Row>
+            <Row>
+              <InputGroup size="sm">
+                <InputGroup.Prepend>
+                  <InputGroup.Text>備考</InputGroup.Text>
+                </InputGroup.Prepend>
+                <Form.Control as="textarea" rows={2} value={remarks} onChange={changeRemarks} />
               </InputGroup>
             </Row>
             <Row>
