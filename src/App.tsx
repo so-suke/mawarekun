@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import styled from "styled-components";
-
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Container, Row, Col, FormControl, Form, Button, ListGroup, InputGroup } from "react-bootstrap";
 import { format } from "date-fns";
@@ -10,18 +9,7 @@ const ShrinkNameButton = styled(Button)`
   font-size: 0.4rem;
 `;
 
-// TITLES
-const SELECT_STORE_TITLE: string = "店名を選択して下さい。";
-
-// 交換率ベース？
-const EXCHANGE_RATE_BASE = 4;
-
-// ワンプッシュ当たりの金額
-const AMOUNT_ONE_PUSH = 500;
-
-// スプレッドシートREST_URL
-const REST_URL_SPREADSHEET = "https://script.google.com/macros/s/AKfycbwAEFQ6VWnrJ67EjQiYd8WeEv0D2ogBpV2GYDgxucx9C5gf1Dmd/exec";
-
+// ■型定義
 type RotationType = {
   type: string;
   rotationNumber: number;
@@ -29,7 +17,27 @@ type RotationType = {
   rotationRate: number;
 };
 
+// ■定数定義
+// TITLES
+const SELECT_STORE_TITLE: string = "店名を選択して下さい。";
+// 通常の交換率
+const EXCHANGE_RATE_NORMAL: number = 4;
+// ワンプッシュ当たりの金額
+const AMOUNT_ONE_PUSH = 500;
+// スプレッドシートREST_URL
+const REST_URL_SPREADSHEET = "https://script.google.com/macros/s/AKfycbwAEFQ6VWnrJ67EjQiYd8WeEv0D2ogBpV2GYDgxucx9C5gf1Dmd/exec";
+const REPLENISHMENT_AMOUNT = 500;
+// 直近の回転率計算に用いる。
+const REPLENISHMENT_AMOUNT_RATIO = 1000 / REPLENISHMENT_AMOUNT;
+
+const ROTATION_TYPE = {
+  normal: "normal",
+  continueStart: "continueStart",
+  resetStart: "resetStart",
+};
+
 function App() {
+  // useState定義
   const [rotationNumberInputed, setRotationNumberInputed] = useState<string>("");
   const [rotations, setRotations] = useState<RotationType[]>([]);
   const [rotationRate, setRotationRate] = useState(0);
@@ -41,22 +49,11 @@ function App() {
   const [machineName, setMachineName] = useState("");
   const [ballNumberComfirm, setBallNumberComfirm] = useState("");
   const [remarks, setRemarks] = useState("");
-
   const [storeNamesExchangeRatesMap, setStoreNamesExchangeRatesMap] = useState(new Map());
-
   const [exchangeRate, setExchangeRate] = useState<string>("");
-
+  // useRef定義
   const rotationListRef = useRef<HTMLDivElement>(null);
   const selectStoreRef = useRef<HTMLSelectElement>(document.createElement("select"));
-
-  const replenishmentAmount = 500;
-  const ratioOfReplenishmentAmountToThousandYen = 1000 / replenishmentAmount;
-
-  const rotationType = {
-    normal: "normal",
-    continueStart: "continueStart",
-    resetStart: "resetStart",
-  };
 
   // 初期値として、それぞれの「店名と交換率」を設定する。
   const initStoreNamesExchangeRates = () => {
@@ -140,7 +137,7 @@ function App() {
   }, [storeName]);
 
   function isResetStarted() {
-    return rotations.length > 0 && rotations[0].type === rotationType.resetStart;
+    return rotations.length > 0 && rotations[0].type === ROTATION_TYPE.resetStart;
   }
 
   // change系
@@ -180,10 +177,6 @@ function App() {
     setRotationNumberInputed(event.target.value);
   }
 
-  function _isResetStarted() {
-    return rotations.length !== 0 && rotations[0].type === rotationType.resetStart;
-  }
-
   function clearRotationNumberInputed() {
     setRotationNumberInputed("");
   }
@@ -205,7 +198,7 @@ function App() {
 
     // 投資回数の調整
     const lastRotation = rotations[rotations.length - 1];
-    if (lastRotation.type === rotationType.normal) {
+    if (lastRotation.type === ROTATION_TYPE.normal) {
       setInvestmentCnt(investmentCnt - 1);
     }
 
@@ -222,7 +215,7 @@ function App() {
     }
 
     // 総回転数の更新
-    if (lastRotation.type === rotationType.normal && rotationsDeleted.length > 0) {
+    if (lastRotation.type === ROTATION_TYPE.normal && rotationsDeleted.length > 0) {
       const rotationNumberDiffShouldSub =
         rotations[rotations.length - 1].rotationNumber - rotationsDeleted[rotationsDeleted.length - 1].rotationNumber;
       setTotalRotationNumber(totalRotationNumber - rotationNumberDiffShouldSub);
@@ -254,21 +247,22 @@ function App() {
   function calcTotalRotationNumberFromRotations(rotations: RotationType[]) {
     let totalRotationNumberCalculatted = 0;
     rotations.forEach((rotation, idx) => {
-      if (rotation.type === rotationType.resetStart || rotation.type === rotationType.continueStart) return;
+      if (rotation.type === ROTATION_TYPE.resetStart || rotation.type === ROTATION_TYPE.continueStart) return;
       totalRotationNumberCalculatted += rotation.rotationNumber - rotations[idx - 1].rotationNumber;
     });
     return totalRotationNumberCalculatted;
   }
 
   function rotation() {
-    if (_isResetStarted() === false) {
+    if (isResetStarted() === false) {
       alert(`リセットスタートをしましょう`);
       return;
     }
 
     const investmentCntNow = investmentCnt + 1;
     setInvestmentCnt(investmentCntNow);
-    const magnificationForExchangeRate: number = Number(exchangeRate) / EXCHANGE_RATE_BASE;
+    //　交換率の比：通常交換率'4'と実交換率の比。回転率計算に用いる。
+    const exchangeRateRatio: number = Number(exchangeRate) / EXCHANGE_RATE_NORMAL;
 
     const rotationNumberLast = rotations[rotations.length - 1].rotationNumber;
 
@@ -286,20 +280,18 @@ function App() {
     }
 
     const rotationNumberDiffFromLast = Number(rotationNumberInputedClone) - rotationNumberLast;
-    const rotationRateMostRecent = Number(
-      (rotationNumberDiffFromLast * ratioOfReplenishmentAmountToThousandYen * magnificationForExchangeRate).toFixed(1)
-    );
+    const rotationRateMostRecent = Number((rotationNumberDiffFromLast * REPLENISHMENT_AMOUNT_RATIO * exchangeRateRatio).toFixed(1));
 
     const totalRotationNumberNow = totalRotationNumber + rotationNumberDiffFromLast;
     setTotalRotationNumber(totalRotationNumberNow);
 
-    const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (replenishmentAmount * investmentCntNow);
-    const rotationRateNow = Number((totalRotationNumberNow * ratioOfTotalInvestmentAmountToThousandYen * magnificationForExchangeRate).toFixed(1));
+    const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (REPLENISHMENT_AMOUNT * investmentCntNow);
+    const rotationRateNow = Number((totalRotationNumberNow * ratioOfTotalInvestmentAmountToThousandYen * exchangeRateRatio).toFixed(1));
     setRotationRate(rotationRateNow);
 
     setRotations(
       rotations.concat({
-        type: rotationType.normal,
+        type: ROTATION_TYPE.normal,
         rotationNumber: Number(rotationNumberInputedClone),
         rotationRateMostRecent,
         rotationRate: rotationRateNow,
@@ -321,7 +313,7 @@ function App() {
 
     setRotations(
       rotations.concat({
-        type: rotationType.continueStart,
+        type: ROTATION_TYPE.continueStart,
         rotationNumber: Number(rotationNumberInputed),
         rotationRateMostRecent: 0,
         rotationRate,
@@ -407,7 +399,7 @@ function App() {
 
     setRotations(
       rotations.concat({
-        type: rotationType.resetStart,
+        type: ROTATION_TYPE.resetStart,
         rotationNumber: Number(rotationNumberInputed),
         rotationRateMostRecent: 0,
         rotationRate: 0,
@@ -448,11 +440,11 @@ function App() {
 
   const $rotations = rotations.map((rotation, index) => {
     let content = "";
-    if (rotation.type === rotationType.resetStart) {
+    if (rotation.type === ROTATION_TYPE.resetStart) {
       content = `${rotation.rotationNumber} --start--`;
-    } else if (rotation.type === rotationType.continueStart) {
+    } else if (rotation.type === ROTATION_TYPE.continueStart) {
       content = `${rotation.rotationNumber} > start`;
-    } else if (rotation.type === rotationType.normal) {
+    } else if (rotation.type === ROTATION_TYPE.normal) {
       content = `${rotation.rotationNumber} ${rotation.rotationRateMostRecent} ${rotation.rotationRate}`;
     }
     return <ListGroup.Item key={index}>{content}</ListGroup.Item>;
