@@ -70,28 +70,20 @@ function App() {
     initStoreNamesExchangeRates();
 
     // ローカルストレージから各値を取得。
-    const storeNameGettedFromLocalStorage = localStorage.getItem("storeName");
-    const machineNameGettedFromLocalStorage = localStorage.getItem("machineName");
-    const ballNumberComfirmGettedFromLocalStorage = localStorage.getItem("ballNumberComfirm");
-    const investmentCntGettedFromLocalStorage = localStorage.getItem("investmentCnt");
-    const rotationsGettedFromLocalStorage = localStorage.getItem("rotations");
-    const borderGettedFromLocalStorage = localStorage.getItem("border");
-    const remarksGettedFromLocalStorage = localStorage.getItem("remarks");
+    const investmentCntLocal: string = localStorage.getItem("investmentCnt") || "0";
+    const rotationsLocal: string = localStorage.getItem("rotations") || "[]";
+    const storeNameLocal: string = localStorage.getItem("storeName") || "";
+    const machineNameLocal: string = localStorage.getItem("machineName") || "";
+    const ballNumberComfirmLocal: string = localStorage.getItem("ballNumberComfirm") || "";
+    const borderLocal: string = localStorage.getItem("border") || "";
+    const remarksLocal: string = localStorage.getItem("remarks") || "";
 
-    if (storeNameGettedFromLocalStorage === null) return;
-    if (machineNameGettedFromLocalStorage === null) return;
-    if (ballNumberComfirmGettedFromLocalStorage === null) return;
-    if (investmentCntGettedFromLocalStorage === null) return;
-    if (rotationsGettedFromLocalStorage === null) return;
-    if (borderGettedFromLocalStorage === null) return;
-    if (remarksGettedFromLocalStorage === null) return;
+    setStoreName(storeNameLocal);
+    setMachineName(machineNameLocal);
+    setBallNumberComfirm(ballNumberComfirmLocal);
+    setRemarks(remarksLocal);
 
-    setStoreName(storeNameGettedFromLocalStorage);
-    setMachineName(machineNameGettedFromLocalStorage);
-    setBallNumberComfirm(ballNumberComfirmGettedFromLocalStorage);
-    setRemarks(remarksGettedFromLocalStorage);
-
-    const rotationsParsed = JSON.parse(rotationsGettedFromLocalStorage);
+    const rotationsParsed = JSON.parse(rotationsLocal);
 
     // 存在する場合
     // 回転配列から回転率と総回転数を求める
@@ -101,9 +93,9 @@ function App() {
 
     setRotationRate(rotationRateCalculatted);
     setTotalRotationNumber(rotationNumberTotalCalculatted);
-    setInvestmentCnt(Number(investmentCntGettedFromLocalStorage));
+    setInvestmentCnt(Number(investmentCntLocal));
     setRotations(rotationsParsed);
-    setBorder(borderGettedFromLocalStorage);
+    setBorder(borderLocal);
   }, []);
 
   useEffect(() => {
@@ -163,14 +155,9 @@ function App() {
   }
 
   // 回転数入力ミス防止用玉数の変更
-  // ballNumberComfirm
   function changeBallNumberComfirm(event: React.ChangeEvent<HTMLInputElement>) {
     const ballNumberComfirm = event.target.value;
     setBallNumberComfirm(ballNumberComfirm);
-  }
-
-  function changeExchangeRate(event: React.ChangeEvent<HTMLInputElement>) {
-    setExchangeRate(event.target.value);
   }
 
   function changeRotationNumberInputed(event: React.ChangeEvent<HTMLInputElement>) {
