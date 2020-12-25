@@ -42,7 +42,7 @@ function App() {
   const [rotations, setRotations] = useState<RotationType[]>([]);
   const [rotationRate, setRotationRate] = useState(0);
   const [investmentCnt, setInvestmentCnt] = useState(0);
-  const [totalRotationNumber, setTotalRotationNumber] = useState(0);
+  const [rotationNumberTotal, setRotationNumberTotal] = useState(0);
   const [border, setBorder] = useState<string>("18.0");
   const [storeNames, setStoreNames] = useState<string[]>([]);
   const [storeName, setStoreName] = useState("");
@@ -55,7 +55,7 @@ function App() {
   const rotationListRef = useRef<HTMLDivElement>(null);
   const selectStoreRef = useRef<HTMLSelectElement>(document.createElement("select"));
 
-  // 初期値として、それぞれの「店名と交換率」を設定する。
+  // 初期値として、「店名と交換率」をそれぞれ設定する。
   const initStoreNamesExchangeRates = () => {
     const storeNamesInit = ["DoruNakano", "LiNakano", "NtNakano"];
     setStoreNames(storeNamesInit);
@@ -71,31 +71,22 @@ function App() {
 
     // ローカルストレージから各値を取得。
     const investmentCntLocal: string = localStorage.getItem("investmentCnt") || "0";
-    const rotationsLocal: string = localStorage.getItem("rotations") || "[]";
+    const rotationsParsed: RotationType[] = JSON.parse(localStorage.getItem("rotations") || "[]");
     const storeNameLocal: string = localStorage.getItem("storeName") || "";
     const machineNameLocal: string = localStorage.getItem("machineName") || "";
     const ballNumberComfirmLocal: string = localStorage.getItem("ballNumberComfirm") || "";
     const borderLocal: string = localStorage.getItem("border") || "";
     const remarksLocal: string = localStorage.getItem("remarks") || "";
 
+    setInvestmentCnt(Number(investmentCntLocal));
     setStoreName(storeNameLocal);
+    setRotations(rotationsParsed);
     setMachineName(machineNameLocal);
     setBallNumberComfirm(ballNumberComfirmLocal);
-    setRemarks(remarksLocal);
-
-    const rotationsParsed = JSON.parse(rotationsLocal);
-
-    // 存在する場合
-    // 回転配列から回転率と総回転数を求める
-
-    const rotationRateCalculatted = calcRotationRateFromRotations(rotationsParsed);
-    const rotationNumberTotalCalculatted = calcTotalRotationNumberFromRotations(rotationsParsed);
-
-    setRotationRate(rotationRateCalculatted);
-    setTotalRotationNumber(rotationNumberTotalCalculatted);
-    setInvestmentCnt(Number(investmentCntLocal));
-    setRotations(rotationsParsed);
     setBorder(borderLocal);
+    setRemarks(remarksLocal);
+    setRotationRate(calcRotationRate(rotationsParsed));
+    setRotationNumberTotal(calcRotationNumberTotal(rotationsParsed));
   }, []);
 
   useEffect(() => {
@@ -124,15 +115,17 @@ function App() {
     const storeExchangeRate = storeNamesExchangeRatesMap.get(storeName);
     setExchangeRate(storeExchangeRate);
 
-    // ページ再読込に対応するため
     localStorage.setItem("storeName", storeName);
   }, [storeName]);
 
-  function isResetStarted() {
-    return rotations.length > 0 && rotations[0].type === ROTATION_TYPE.resetStart;
-  }
+  // ■useMemo系
+  // 「回転単価」が「ボーダーまたは回転率」に対する「導出項目」のため。
+  const rotationUnitPrice = useMemo<number>(() => {
+    if (rotationRate === 0) return 0;
+    return Number((1000 / Number(border) - 1000 / rotationRate).toFixed(1));
+  }, [border, rotationRate]);
 
-  // change系
+  // ■change系
   function changeStoreNamesSelect(event: React.ChangeEvent<HTMLInputElement>) {
     setStoreName(event.target.value);
   }
@@ -164,18 +157,24 @@ function App() {
     setRotationNumberInputed(event.target.value);
   }
 
+  // ■通常関数定義
+  function isResetStarted() {
+    return rotations.length > 0 && rotations[0].type === ROTATION_TYPE.resetStart;
+  }
+
   function clearRotationNumberInputed() {
     setRotationNumberInputed("");
   }
 
   function getWorkAmount() {
-    return (rotationUnitPrice * totalRotationNumber).toFixed(0);
+    return (rotationUnitPrice * rotationNumberTotal).toFixed(0);
   }
 
-  const rotationUnitPrice = useMemo<number>(() => {
-    if (rotationRate === 0) return 0;
-    return Number((1000 / Number(border) - 1000 / rotationRate).toFixed(1));
-  }, [border, rotationRate]);
+  // 一回の貸出ボタン玉数
+  function getBallNumberOnePush(storeName: string): number {
+    const storeExchangeRate: number = storeNamesExchangeRatesMap.get(storeName);
+    return Number((AMOUNT_ONE_PUSH / storeExchangeRate).toFixed());
+  }
 
   //　回転配列を1行削除する。
   function deleteOneRotation() {
@@ -205,18 +204,27 @@ function App() {
     if (lastRotation.type === ROTATION_TYPE.normal && rotationsDeleted.length > 0) {
       const rotationNumberDiffShouldSub =
         rotations[rotations.length - 1].rotationNumber - rotationsDeleted[rotationsDeleted.length - 1].rotationNumber;
-      setTotalRotationNumber(totalRotationNumber - rotationNumberDiffShouldSub);
+      setRotationNumberTotal(rotationNumberTotal - rotationNumberDiffShouldSub);
     }
 
     setRotations(rotationsDeleted);
 
     // 確認用玉数を計算
-    const storeExchangeRate = storeNamesExchangeRatesMap.get(storeName);
-    const ballNumberOnePush = Number((AMOUNT_ONE_PUSH / storeExchangeRate).toFixed());
-    setBallNumberComfirm(String(Number(ballNumberComfirm) + ballNumberOnePush));
+    setBallNumberComfirm(String(Number(ballNumberComfirm) + getBallNumberOnePush(storeName)));
   }
 
-  function calcRotationRateFromRotations(rotations: RotationType[]) {
+  // 画面の初期読込時に使用
+  function calcRotationNumberTotal(rotations: RotationType[]) {
+    let totalRotationNumberCalculatted = 0;
+    rotations.forEach((rotation, idx) => {
+      if (rotation.type === ROTATION_TYPE.resetStart || rotation.type === ROTATION_TYPE.continueStart) return;
+      totalRotationNumberCalculatted += rotation.rotationNumber - rotations[idx - 1].rotationNumber;
+    });
+    return totalRotationNumberCalculatted;
+  }
+
+  // 画面の初期読込時に使用
+  function calcRotationRate(rotations: RotationType[]) {
     if (rotations.length === 0) return 0;
     return rotations[rotations.length - 1].rotationRate;
   }
@@ -226,88 +234,8 @@ function App() {
       setRotations([]);
       setRotationRate(0);
       setInvestmentCnt(0);
-      setTotalRotationNumber(0);
+      setRotationNumberTotal(0);
     }
-  }
-
-  // 回転配列から総回転数を求める。
-  function calcTotalRotationNumberFromRotations(rotations: RotationType[]) {
-    let totalRotationNumberCalculatted = 0;
-    rotations.forEach((rotation, idx) => {
-      if (rotation.type === ROTATION_TYPE.resetStart || rotation.type === ROTATION_TYPE.continueStart) return;
-      totalRotationNumberCalculatted += rotation.rotationNumber - rotations[idx - 1].rotationNumber;
-    });
-    return totalRotationNumberCalculatted;
-  }
-
-  function rotation() {
-    if (isResetStarted() === false) {
-      alert(`リセットスタートをしましょう`);
-      return;
-    }
-
-    const investmentCntNow = investmentCnt + 1;
-    setInvestmentCnt(investmentCntNow);
-    //　交換率の比：通常交換率'4'と実交換率の比。回転率計算に用いる。
-    const exchangeRateRatio: number = Number(exchangeRate) / EXCHANGE_RATE_NORMAL;
-
-    const rotationNumberLast = rotations[rotations.length - 1].rotationNumber;
-
-    let rotationNumberInputedClone: number = Number(rotationNumberInputed);
-
-    // 回転数の短縮入力：ひとまず回転数が3桁以下の場合のみ対応
-    if (String(rotationNumberInputedClone).length < 3 && String(rotations[rotations.length - 1].rotationNumber).length > 1) {
-      const convertToThreeDigits: string = ("000" + rotations[rotations.length - 1].rotationNumber).slice(-3);
-      const lastTwoDigits: number = Number(String(rotations[rotations.length - 1].rotationNumber).slice(1, 3));
-      const baseNumberOfHundreds: number =
-        rotationNumberInputedClone > lastTwoDigits ? Number(convertToThreeDigits[0]) : Number(convertToThreeDigits[0]) + 1;
-
-      const baseNumber: number = baseNumberOfHundreds * 100;
-      rotationNumberInputedClone += baseNumber;
-    }
-
-    const rotationNumberDiffFromLast = Number(rotationNumberInputedClone) - rotationNumberLast;
-    const rotationRateMostRecent = Number((rotationNumberDiffFromLast * REPLENISHMENT_AMOUNT_RATIO * exchangeRateRatio).toFixed(1));
-
-    const totalRotationNumberNow = totalRotationNumber + rotationNumberDiffFromLast;
-    setTotalRotationNumber(totalRotationNumberNow);
-
-    const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (REPLENISHMENT_AMOUNT * investmentCntNow);
-    const rotationRateNow = Number((totalRotationNumberNow * ratioOfTotalInvestmentAmountToThousandYen * exchangeRateRatio).toFixed(1));
-    setRotationRate(rotationRateNow);
-
-    setRotations(
-      rotations.concat({
-        type: ROTATION_TYPE.normal,
-        rotationNumber: Number(rotationNumberInputedClone),
-        rotationRateMostRecent,
-        rotationRate: rotationRateNow,
-      })
-    );
-    clearRotationNumberInputed();
-
-    // 確認用玉数を計算
-    const storeExchangeRate = storeNamesExchangeRatesMap.get(storeName);
-    const ballNumberOnePush = Number((AMOUNT_ONE_PUSH / storeExchangeRate).toFixed());
-    setBallNumberComfirm(String(Number(ballNumberComfirm) - ballNumberOnePush));
-  }
-
-  function continueStart() {
-    if (rotationNumberInputed === "") {
-      alert(`回転数を入力しましょう`);
-      return;
-    }
-
-    setRotations(
-      rotations.concat({
-        type: ROTATION_TYPE.continueStart,
-        rotationNumber: Number(rotationNumberInputed),
-        rotationRateMostRecent: 0,
-        rotationRate,
-      })
-    );
-
-    clearRotationNumberInputed();
   }
 
   // スプレッドシートへ稼働記録を書き込む
@@ -322,7 +250,7 @@ function App() {
     params.append("border", `ボーダー：${border}`);
     params.append("rotationRate", `回転率：${rotationRate}`);
     params.append("rotationUnitPrice", `回転単価：${rotationUnitPrice}`);
-    params.append("totalRotationNumber", `総回転数：${totalRotationNumber}`);
+    params.append("rotationNumberTotal", `総回転数：${rotationNumberTotal}`);
     params.append("workAmount", `${getWorkAmount()}`);
     params.append("machineName", `${machineName}`);
     params.append("storeName", `${storeName}`);
@@ -354,7 +282,7 @@ function App() {
       `ボーダー：${border}`,
       `回転率：${rotationRate}`,
       `回転単価：${rotationUnitPrice}`,
-      `総回転数：${totalRotationNumber}`,
+      `総回転数：${rotationNumberTotal}`,
       `${getWorkAmount()}`,
       `${machineName}`,
       `${storeName}`,
@@ -367,6 +295,77 @@ function App() {
     navigator.clipboard.writeText(getWorkRecordForSpreadSheet());
   }
 
+  // 通常回転（回転ボタン押下時の処理）
+  function rotation() {
+    if (isResetStarted() === false) {
+      alert(`リセットスタートをしましょう`);
+      return;
+    }
+
+    const investmentCntNow = investmentCnt + 1;
+    setInvestmentCnt(investmentCntNow);
+    //　交換率の比：通常交換率'4'と実交換率の比。回転率計算に用いる。
+    const exchangeRateRatio: number = Number(exchangeRate) / EXCHANGE_RATE_NORMAL;
+
+    const rotationNumberLast = rotations[rotations.length - 1].rotationNumber;
+
+    let rotationNumberInputedClone: number = Number(rotationNumberInputed);
+
+    // 回転数の短縮入力：ひとまず回転数が3桁以下の場合のみ対応
+    if (String(rotationNumberInputedClone).length < 3 && String(rotations[rotations.length - 1].rotationNumber).length > 1) {
+      const convertToThreeDigits: string = ("000" + rotations[rotations.length - 1].rotationNumber).slice(-3);
+      const lastTwoDigits: number = Number(String(rotations[rotations.length - 1].rotationNumber).slice(1, 3));
+      const baseNumberOfHundreds: number =
+        rotationNumberInputedClone > lastTwoDigits ? Number(convertToThreeDigits[0]) : Number(convertToThreeDigits[0]) + 1;
+
+      const baseNumber: number = baseNumberOfHundreds * 100;
+      rotationNumberInputedClone += baseNumber;
+    }
+
+    const rotationNumberDiffFromLast = Number(rotationNumberInputedClone) - rotationNumberLast;
+    const rotationRateMostRecent = Number((rotationNumberDiffFromLast * REPLENISHMENT_AMOUNT_RATIO * exchangeRateRatio).toFixed(1));
+
+    const totalRotationNumberNow = rotationNumberTotal + rotationNumberDiffFromLast;
+    setRotationNumberTotal(totalRotationNumberNow);
+
+    const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (REPLENISHMENT_AMOUNT * investmentCntNow);
+    const rotationRateNow = Number((totalRotationNumberNow * ratioOfTotalInvestmentAmountToThousandYen * exchangeRateRatio).toFixed(1));
+    setRotationRate(rotationRateNow);
+
+    setRotations(
+      rotations.concat({
+        type: ROTATION_TYPE.normal,
+        rotationNumber: Number(rotationNumberInputedClone),
+        rotationRateMostRecent,
+        rotationRate: rotationRateNow,
+      })
+    );
+    clearRotationNumberInputed();
+
+    // 確認用玉数を計算
+    setBallNumberComfirm(String(Number(ballNumberComfirm) - getBallNumberOnePush(storeName)));
+  }
+
+  // 継続スタート
+  function continueStart() {
+    if (rotationNumberInputed === "") {
+      alert(`回転数を入力しましょう`);
+      return;
+    }
+
+    setRotations(
+      rotations.concat({
+        type: ROTATION_TYPE.continueStart,
+        rotationNumber: Number(rotationNumberInputed),
+        rotationRateMostRecent: 0,
+        rotationRate,
+      })
+    );
+
+    clearRotationNumberInputed();
+  }
+
+  // リセットスタート
   function resetStart() {
     if (isResetStarted()) {
       alert("既にリセットスタートされています");
@@ -446,7 +445,7 @@ function App() {
               回転単価：<span>{rotationUnitPrice}</span>
             </p>
             <p className="mb-0">
-              総回転数：<span>{totalRotationNumber}</span>
+              総回転数：<span>{rotationNumberTotal}</span>
             </p>
             <p className="mb-0">
               仕事量：<span>{getWorkAmount()}</span>
