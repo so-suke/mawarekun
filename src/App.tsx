@@ -295,24 +295,15 @@ function App() {
     navigator.clipboard.writeText(getWorkRecordForSpreadSheet());
   }
 
-  // 通常回転（回転ボタン押下時の処理）
-  function rotation() {
-    if (isResetStarted() === false) {
-      alert(`リセットスタートをしましょう`);
-      return;
-    }
+  // 回転数の短縮入力の判別
+  function shouldShortInput() {
+    return String(rotationNumberInputed).length < 3 && String(rotations[rotations.length - 1].rotationNumber).length > 1;
+  }
 
-    const investmentCntNow = investmentCnt + 1;
-    setInvestmentCnt(investmentCntNow);
-    //　交換率の比：通常交換率'4'と実交換率の比。回転率計算に用いる。
-    const exchangeRateRatio: number = Number(exchangeRate) / EXCHANGE_RATE_NORMAL;
-
-    const rotationNumberLast = rotations[rotations.length - 1].rotationNumber;
-
+  // 回転数の短縮入力：ひとまず回転数が3桁以下の場合のみ対応
+  function getRotationNumberByShortInputIfNeeded(): number {
     let rotationNumberInputedClone: number = Number(rotationNumberInputed);
-
-    // 回転数の短縮入力：ひとまず回転数が3桁以下の場合のみ対応
-    if (String(rotationNumberInputedClone).length < 3 && String(rotations[rotations.length - 1].rotationNumber).length > 1) {
+    if (shouldShortInput()) {
       const convertToThreeDigits: string = ("000" + rotations[rotations.length - 1].rotationNumber).slice(-3);
       const lastTwoDigits: number = Number(String(rotations[rotations.length - 1].rotationNumber).slice(1, 3));
       const baseNumberOfHundreds: number =
@@ -322,16 +313,37 @@ function App() {
       rotationNumberInputedClone += baseNumber;
     }
 
-    const rotationNumberDiffFromLast = Number(rotationNumberInputedClone) - rotationNumberLast;
+    return rotationNumberInputedClone;
+  }
+
+  // 通常回転（回転ボタン押下時の処理）
+  function rotation() {
+    if (isResetStarted() === false) {
+      alert(`リセットスタートをしましょう`);
+      return;
+    }
+
+    // 投資回数の計算
+    const investmentCntNow = investmentCnt + 1;
+    // 必要であれば短縮入力を効かせる。
+    const rotationNumberInputedClone = getRotationNumberByShortInputIfNeeded();
+    const rotationNumberDiffFromLast = Number(rotationNumberInputedClone) - rotations[rotations.length - 1].rotationNumber;
+    //　交換率の比：通常交換率'4'と実交換率の比。回転率計算に用いる。
+    const exchangeRateRatio: number = Number(exchangeRate) / EXCHANGE_RATE_NORMAL;
     const rotationRateMostRecent = Number((rotationNumberDiffFromLast * REPLENISHMENT_AMOUNT_RATIO * exchangeRateRatio).toFixed(1));
 
-    const totalRotationNumberNow = rotationNumberTotal + rotationNumberDiffFromLast;
-    setRotationNumberTotal(totalRotationNumberNow);
+    const rotationNumberTotalNow = rotationNumberTotal + rotationNumberDiffFromLast;
 
-    const ratioOfTotalInvestmentAmountToThousandYen = 1000 / (REPLENISHMENT_AMOUNT * investmentCntNow);
-    const rotationRateNow = Number((totalRotationNumberNow * ratioOfTotalInvestmentAmountToThousandYen * exchangeRateRatio).toFixed(1));
+    // 投資金額の比（todo:もう少し分かりやすく出来るかも？）
+    const investmentAmountRatio = 1000 / (REPLENISHMENT_AMOUNT * investmentCntNow);
+    const rotationRateNow = Number((rotationNumberTotalNow * investmentAmountRatio * exchangeRateRatio).toFixed(1));
+
+    clearRotationNumberInputed();
+
+    // 各種set
+    setInvestmentCnt(investmentCntNow);
+    setRotationNumberTotal(rotationNumberTotalNow);
     setRotationRate(rotationRateNow);
-
     setRotations(
       rotations.concat({
         type: ROTATION_TYPE.normal,
@@ -340,8 +352,6 @@ function App() {
         rotationRate: rotationRateNow,
       })
     );
-    clearRotationNumberInputed();
-
     // 確認用玉数を計算
     setBallNumberComfirm(String(Number(ballNumberComfirm) - getBallNumberOnePush(storeName)));
   }
