@@ -3,45 +3,25 @@ import styled from "styled-components";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Container, Row, Col, FormControl, Form, Button, ListGroup, InputGroup } from "react-bootstrap";
 import { format } from "date-fns";
+// 型定義インポート
+import { RotationType } from "./types/rotation";
+// 定数定義インポート
+import {
+  SELECT_STORE_TITLE,
+  EXCHANGE_RATE_NORMAL,
+  AMOUNT_ONE_PUSH,
+  REST_URL_SPREADSHEET,
+  REPLENISHMENT_AMOUNT,
+  REPLENISHMENT_AMOUNT_RATIO,
+  ROTATION_MODE,
+  ERROR_MSG,
+} from "./constants/main";
+
 const axios = require("axios").default;
 
 const ShrinkNameButton = styled(Button)`
   font-size: 0.4rem;
 `;
-
-// ■型定義
-type RotationType = {
-  type: string;
-  rotationNumber: number;
-  rotationRateMostRecent: number;
-  rotationRate: number;
-};
-
-// ■定数定義
-// TITLES
-const SELECT_STORE_TITLE: string = "店名を選択して下さい。";
-// 通常の交換率
-const EXCHANGE_RATE_NORMAL: number = 4;
-// ワンプッシュ当たりの金額
-const AMOUNT_ONE_PUSH = 500;
-// スプレッドシートREST_URL
-const REST_URL_SPREADSHEET = "https://script.google.com/macros/s/AKfycbwAEFQ6VWnrJ67EjQiYd8WeEv0D2ogBpV2GYDgxucx9C5gf1Dmd/exec";
-const REPLENISHMENT_AMOUNT = 500;
-// 直近の回転率計算に用いる。
-const REPLENISHMENT_AMOUNT_RATIO = 1000 / REPLENISHMENT_AMOUNT;
-
-const ROTATION_TYPE = {
-  normal: "normal",
-  continueStart: "continueStart",
-  resetStart: "resetStart",
-};
-
-const ERROR_MSG = {
-  resetStart: "リセットスタートをしましょう",
-  resetStartedAlready: "既にリセットスタートされています",
-  rotaionNumberEmpty: "回転数を入力しましょう",
-  selectStore: "店名を選択して下さい。",
-};
 
 function App() {
   // useState定義
@@ -166,7 +146,7 @@ function App() {
 
   // ■通常関数定義
   function isResetStarted() {
-    return rotations.length > 0 && rotations[0].type === ROTATION_TYPE.resetStart;
+    return rotations.length > 0 && rotations[0].type === ROTATION_MODE.resetStart;
   }
 
   function clearRotationNumberInputed() {
@@ -191,7 +171,7 @@ function App() {
 
     // 投資回数の調整
     const lastRotation = rotations[rotations.length - 1];
-    if (lastRotation.type === ROTATION_TYPE.normal) {
+    if (lastRotation.type === ROTATION_MODE.normal) {
       setInvestmentCnt(investmentCnt - 1);
     }
 
@@ -208,7 +188,7 @@ function App() {
     }
 
     // 総回転数の更新
-    if (lastRotation.type === ROTATION_TYPE.normal && rotationsDeleted.length > 0) {
+    if (lastRotation.type === ROTATION_MODE.normal && rotationsDeleted.length > 0) {
       const rotationNumberDiffShouldSub =
         rotations[rotations.length - 1].rotationNumber - rotationsDeleted[rotationsDeleted.length - 1].rotationNumber;
       setRotationNumberTotal(rotationNumberTotal - rotationNumberDiffShouldSub);
@@ -224,7 +204,7 @@ function App() {
   function calcRotationNumberTotal(rotations: RotationType[]) {
     let totalRotationNumberCalculatted = 0;
     rotations.forEach((rotation, idx) => {
-      if (rotation.type === ROTATION_TYPE.resetStart || rotation.type === ROTATION_TYPE.continueStart) return;
+      if (rotation.type === ROTATION_MODE.resetStart || rotation.type === ROTATION_MODE.continueStart) return;
       totalRotationNumberCalculatted += rotation.rotationNumber - rotations[idx - 1].rotationNumber;
     });
     return totalRotationNumberCalculatted;
@@ -353,7 +333,7 @@ function App() {
       setRotationRate(rotationRateNow);
       setRotations(
         rotations.concat({
-          type: ROTATION_TYPE.normal,
+          type: ROTATION_MODE.normal,
           rotationNumber: Number(rotationNumberInputedClone),
           rotationRateMostRecent,
           rotationRate: rotationRateNow,
@@ -375,7 +355,7 @@ function App() {
 
       setRotations(
         rotations.concat({
-          type: ROTATION_TYPE.continueStart,
+          type: ROTATION_MODE.continueStart,
           rotationNumber: Number(rotationNumberInputed),
           rotationRateMostRecent: 0,
           rotationRate,
@@ -403,7 +383,7 @@ function App() {
 
       setRotations(
         rotations.concat({
-          type: ROTATION_TYPE.resetStart,
+          type: ROTATION_MODE.resetStart,
           rotationNumber: Number(rotationNumberInputed),
           rotationRateMostRecent: 0,
           rotationRate: 0,
@@ -447,11 +427,11 @@ function App() {
 
   const $rotations = rotations.map((rotation, index) => {
     let content = "";
-    if (rotation.type === ROTATION_TYPE.resetStart) {
+    if (rotation.type === ROTATION_MODE.resetStart) {
       content = `${rotation.rotationNumber} --start--`;
-    } else if (rotation.type === ROTATION_TYPE.continueStart) {
+    } else if (rotation.type === ROTATION_MODE.continueStart) {
       content = `${rotation.rotationNumber} > start`;
-    } else if (rotation.type === ROTATION_TYPE.normal) {
+    } else if (rotation.type === ROTATION_MODE.normal) {
       content = `${rotation.rotationNumber} ${rotation.rotationRateMostRecent} ${rotation.rotationRate}`;
     }
     return <ListGroup.Item key={index}>{content}</ListGroup.Item>;
