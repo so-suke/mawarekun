@@ -36,6 +36,13 @@ const ROTATION_TYPE = {
   resetStart: "resetStart",
 };
 
+const ERROR_MSG = {
+  resetStart: "リセットスタートをしましょう",
+  resetStartedAlready: "既にリセットスタートされています",
+  rotaionNumberEmpty: "回転数を入力しましょう",
+  selectStore: "店名を選択して下さい。",
+};
+
 function App() {
   // useState定義
   const [rotationNumberInputed, setRotationNumberInputed] = useState<string>("");
@@ -318,93 +325,97 @@ function App() {
 
   // 通常回転（回転ボタン押下時の処理）
   function rotation() {
-    if (isResetStarted() === false) {
-      alert(`リセットスタートをしましょう`);
-      return;
+    try {
+      if (isResetStarted() === false) {
+        throw ERROR_MSG.resetStart;
+      }
+
+      // 投資回数の計算
+      const investmentCntNow = investmentCnt + 1;
+      // 必要であれば短縮入力を効かせる。
+      const rotationNumberInputedClone = getRotationNumberByShortInputIfNeeded();
+      const rotationNumberDiffFromLast = Number(rotationNumberInputedClone) - rotations[rotations.length - 1].rotationNumber;
+      //　交換率の比：通常交換率'4'と実交換率の比。回転率計算に用いる。
+      const exchangeRateRatio: number = Number(exchangeRate) / EXCHANGE_RATE_NORMAL;
+      const rotationRateMostRecent = Number((rotationNumberDiffFromLast * REPLENISHMENT_AMOUNT_RATIO * exchangeRateRatio).toFixed(1));
+
+      const rotationNumberTotalNow = rotationNumberTotal + rotationNumberDiffFromLast;
+
+      // 投資金額の比（todo:もう少し分かりやすく出来るかも？）
+      const investmentAmountRatio = 1000 / (REPLENISHMENT_AMOUNT * investmentCntNow);
+      const rotationRateNow = Number((rotationNumberTotalNow * investmentAmountRatio * exchangeRateRatio).toFixed(1));
+
+      clearRotationNumberInputed();
+
+      // 各種set
+      setInvestmentCnt(investmentCntNow);
+      setRotationNumberTotal(rotationNumberTotalNow);
+      setRotationRate(rotationRateNow);
+      setRotations(
+        rotations.concat({
+          type: ROTATION_TYPE.normal,
+          rotationNumber: Number(rotationNumberInputedClone),
+          rotationRateMostRecent,
+          rotationRate: rotationRateNow,
+        })
+      );
+      // 確認用玉数を計算
+      setBallNumberComfirm(String(Number(ballNumberComfirm) - getBallNumberOnePush(storeName)));
+    } catch (error) {
+      alert(error);
     }
-
-    // 投資回数の計算
-    const investmentCntNow = investmentCnt + 1;
-    // 必要であれば短縮入力を効かせる。
-    const rotationNumberInputedClone = getRotationNumberByShortInputIfNeeded();
-    const rotationNumberDiffFromLast = Number(rotationNumberInputedClone) - rotations[rotations.length - 1].rotationNumber;
-    //　交換率の比：通常交換率'4'と実交換率の比。回転率計算に用いる。
-    const exchangeRateRatio: number = Number(exchangeRate) / EXCHANGE_RATE_NORMAL;
-    const rotationRateMostRecent = Number((rotationNumberDiffFromLast * REPLENISHMENT_AMOUNT_RATIO * exchangeRateRatio).toFixed(1));
-
-    const rotationNumberTotalNow = rotationNumberTotal + rotationNumberDiffFromLast;
-
-    // 投資金額の比（todo:もう少し分かりやすく出来るかも？）
-    const investmentAmountRatio = 1000 / (REPLENISHMENT_AMOUNT * investmentCntNow);
-    const rotationRateNow = Number((rotationNumberTotalNow * investmentAmountRatio * exchangeRateRatio).toFixed(1));
-
-    clearRotationNumberInputed();
-
-    // 各種set
-    setInvestmentCnt(investmentCntNow);
-    setRotationNumberTotal(rotationNumberTotalNow);
-    setRotationRate(rotationRateNow);
-    setRotations(
-      rotations.concat({
-        type: ROTATION_TYPE.normal,
-        rotationNumber: Number(rotationNumberInputedClone),
-        rotationRateMostRecent,
-        rotationRate: rotationRateNow,
-      })
-    );
-    // 確認用玉数を計算
-    setBallNumberComfirm(String(Number(ballNumberComfirm) - getBallNumberOnePush(storeName)));
   }
 
   // 継続スタート
   function continueStart() {
-    if (rotationNumberInputed === "") {
-      alert(`回転数を入力しましょう`);
-      return;
+    try {
+      if (rotationNumberInputed === "") {
+        throw ERROR_MSG.rotaionNumberEmpty;
+      }
+
+      setRotations(
+        rotations.concat({
+          type: ROTATION_TYPE.continueStart,
+          rotationNumber: Number(rotationNumberInputed),
+          rotationRateMostRecent: 0,
+          rotationRate,
+        })
+      );
+
+      clearRotationNumberInputed();
+    } catch (error) {
+      alert(error);
     }
-
-    setRotations(
-      rotations.concat({
-        type: ROTATION_TYPE.continueStart,
-        rotationNumber: Number(rotationNumberInputed),
-        rotationRateMostRecent: 0,
-        rotationRate,
-      })
-    );
-
-    clearRotationNumberInputed();
   }
 
   // リセットスタート
   function resetStart() {
-    if (isResetStarted()) {
-      alert("既にリセットスタートされています");
-      return;
+    try {
+      if (isResetStarted()) {
+        throw ERROR_MSG.resetStartedAlready;
+      }
+      if (rotationNumberInputed === "") {
+        throw ERROR_MSG.rotaionNumberEmpty;
+      }
+      if (selectStoreRef.current.value === "") {
+        throw ERROR_MSG.selectStore;
+      }
+
+      setRotations(
+        rotations.concat({
+          type: ROTATION_TYPE.resetStart,
+          rotationNumber: Number(rotationNumberInputed),
+          rotationRateMostRecent: 0,
+          rotationRate: 0,
+        })
+      );
+
+      clearRotationNumberInputed();
+
+      localStorage.setItem("startTime", format(new Date(), "HH:mm"));
+    } catch (error) {
+      alert(error);
     }
-
-    if (rotationNumberInputed === "") {
-      alert(`回転数を入力しましょう`);
-      return;
-    }
-
-    // 選択肢：店名の値が初期値の場合、警告を出す。
-    if (selectStoreRef.current.value === "") {
-      alert(`店名を選択して下さい。`);
-      return;
-    }
-
-    setRotations(
-      rotations.concat({
-        type: ROTATION_TYPE.resetStart,
-        rotationNumber: Number(rotationNumberInputed),
-        rotationRateMostRecent: 0,
-        rotationRate: 0,
-      })
-    );
-
-    clearRotationNumberInputed();
-
-    localStorage.setItem("startTime", format(new Date(), "HH:mm"));
   }
 
   // DOMの定義
