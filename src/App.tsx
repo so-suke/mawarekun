@@ -4,7 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Container, Row, Col, FormControl, Form, Button, ListGroup, InputGroup } from "react-bootstrap";
 import { format } from "date-fns";
 // 型定義インポート
-import { RotationType } from "./types/rotation";
+import { TypeRotation, TypeStoreName } from "./types";
 // 定数定義インポート
 import {
   SELECT_STORE_TITLE,
@@ -17,6 +17,10 @@ import {
   ERROR_MSG,
 } from "./constants/main";
 
+import { NumberButtons } from "./components/NumberButtons";
+import { Rotations } from "./components/Rotations";
+import { StoreNames } from "./components/StoreNames";
+
 const axios = require("axios").default;
 
 const ShrinkNameButton = styled(Button)`
@@ -26,12 +30,12 @@ const ShrinkNameButton = styled(Button)`
 function App() {
   // useState定義
   const [rotationNumberInputed, setRotationNumberInputed] = useState<string>("");
-  const [rotations, setRotations] = useState<RotationType[]>([]);
+  const [rotations, setRotations] = useState<TypeRotation[]>([]);
   const [rotationRate, setRotationRate] = useState(0);
   const [investmentCnt, setInvestmentCnt] = useState(0);
   const [rotationNumberTotal, setRotationNumberTotal] = useState(0);
   const [border, setBorder] = useState<string>("18.0");
-  const [storeNames, setStoreNames] = useState<string[]>([]);
+  const [storeNames, setStoreNames] = useState<TypeStoreName[]>([]);
   const [storeName, setStoreName] = useState("");
   const [machineName, setMachineName] = useState("");
   const [ballNumberComfirm, setBallNumberComfirm] = useState("");
@@ -58,7 +62,7 @@ function App() {
 
     // ローカルストレージから各値を取得。
     const investmentCntLocal: string = localStorage.getItem("investmentCnt") || "0";
-    const rotationsParsed: RotationType[] = JSON.parse(localStorage.getItem("rotations") || "[]");
+    const rotationsParsed: TypeRotation[] = JSON.parse(localStorage.getItem("rotations") || "[]");
     const storeNameLocal: string = localStorage.getItem("storeName") || "";
     const machineNameLocal: string = localStorage.getItem("machineName") || "";
     const ballNumberComfirmLocal: string = localStorage.getItem("ballNumberComfirm") || "";
@@ -201,7 +205,7 @@ function App() {
   }
 
   // 画面の初期読込時に使用
-  function calcRotationNumberTotal(rotations: RotationType[]) {
+  function calcRotationNumberTotal(rotations: TypeRotation[]) {
     let totalRotationNumberCalculatted = 0;
     rotations.forEach((rotation, idx) => {
       if (rotation.type === ROTATION_MODE.resetStart || rotation.type === ROTATION_MODE.continueStart) return;
@@ -211,7 +215,7 @@ function App() {
   }
 
   // 画面の初期読込時に使用
-  function calcRotationRate(rotations: RotationType[]) {
+  function calcRotationRate(rotations: TypeRotation[]) {
     if (rotations.length === 0) return 0;
     return rotations[rotations.length - 1].rotationRate;
   }
@@ -398,45 +402,6 @@ function App() {
     }
   }
 
-  // DOMの定義
-
-  // 店名の選択肢
-  const $storeNames = (() => {
-    const $doms = [
-      <option key={"defaultValue"} value="" disabled hidden>
-        {SELECT_STORE_TITLE}
-      </option>,
-    ];
-    const $storeNames = storeNames.map((store) => {
-      return (
-        <option key={store} value={store}>
-          {store}
-        </option>
-      );
-    });
-
-    const $domsConcated = [$doms, ...$storeNames];
-    return $domsConcated;
-  })();
-
-  const $numberButtons = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "0"].map((number) => (
-    <Button key={number} variant="primary" className="col-4" onClick={() => setRotationNumberInputed(rotationNumberInputed + number)}>
-      {number}
-    </Button>
-  ));
-
-  const $rotations = rotations.map((rotation, index) => {
-    let content = "";
-    if (rotation.type === ROTATION_MODE.resetStart) {
-      content = `${rotation.rotationNumber} --start--`;
-    } else if (rotation.type === ROTATION_MODE.continueStart) {
-      content = `${rotation.rotationNumber} > start`;
-    } else if (rotation.type === ROTATION_MODE.normal) {
-      content = `${rotation.rotationNumber} ${rotation.rotationRateMostRecent} ${rotation.rotationRate}`;
-    }
-    return <ListGroup.Item key={index}>{content}</ListGroup.Item>;
-  });
-
   return (
     <div className="App">
       <Container className="pt-3">
@@ -470,7 +435,7 @@ function App() {
             />
 
             <Row className="m-0 mb-2">
-              {$numberButtons}
+              <NumberButtons setRotationNumberInputed={setRotationNumberInputed} rotationNumberInputed={rotationNumberInputed} />
               <Button variant="primary" className="col-4" onClick={() => clearRotationNumberInputed()}>
                 C
               </Button>
@@ -508,7 +473,7 @@ function App() {
                   <InputGroup.Text>店名</InputGroup.Text>
                 </InputGroup.Prepend>
                 <Form.Control as="select" value={storeName} onChange={changeStoreNamesSelect} ref={selectStoreRef}>
-                  {$storeNames}
+                  <StoreNames storeNames={storeNames} />
                 </Form.Control>
               </InputGroup>
             </Row>
@@ -546,7 +511,7 @@ function App() {
           </Col>
           <Col>
             <ListGroup className="rotationList" ref={rotationListRef}>
-              {$rotations}
+              <Rotations rotations={rotations} />
             </ListGroup>
           </Col>
         </Row>

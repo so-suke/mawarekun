@@ -10,7 +10,7 @@ export const REPLENISHMENT_AMOUNT = 500;
 // 直近の回転率計算に用いる。
 export const REPLENISHMENT_AMOUNT_RATIO = 1000 / REPLENISHMENT_AMOUNT;
 
-export const ROTATION_MODE = {
+export const ROTATION_MODE: { [key: string]: string } = {
   normal: "normal",
   continueStart: "continueStart",
   resetStart: "resetStart",
