@@ -1,3 +1,5 @@
+import { TypeErrorMsg } from "../types";
+
 // TITLES
 export const SELECT_STORE_TITLE: string = "店名を選択して下さい。";
 // 通常の交換率
@@ -16,7 +18,7 @@ export const ROTATION_MODE: { [key: string]: string } = {
   resetStart: "resetStart",
 };
 
-export const ERROR_MSG = {
+export const ERROR_MSG: TypeErrorMsg = {
   resetStart: "リセットスタートをしましょう",
   resetStartedAlready: "既にリセットスタートされています",
   rotaionNumberEmpty: "回転数を入力しましょう",

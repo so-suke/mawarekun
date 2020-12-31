@@ -5,3 +5,4 @@ export type TypeRotation = {
   rotationRate: number;
 };
 export type TypeStoreName = string;
+export type TypeErrorMsg = { [key: string]: string };

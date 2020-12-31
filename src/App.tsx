@@ -21,6 +21,8 @@ import { NumberButtons } from "./components/NumberButtons";
 import { Rotations } from "./components/Rotations";
 import { StoreNames } from "./components/StoreNames";
 
+import { continueStart } from "./functions/rotationSystem";
+
 const axios = require("axios").default;
 
 const ShrinkNameButton = styled(Button)`
@@ -350,28 +352,6 @@ function App() {
     }
   }
 
-  // 継続スタート
-  function continueStart() {
-    try {
-      if (rotationNumberInputed === "") {
-        throw ERROR_MSG.rotaionNumberEmpty;
-      }
-
-      setRotations(
-        rotations.concat({
-          type: ROTATION_MODE.continueStart,
-          rotationNumber: Number(rotationNumberInputed),
-          rotationRateMostRecent: 0,
-          rotationRate,
-        })
-      );
-
-      clearRotationNumberInputed();
-    } catch (error) {
-      alert(error);
-    }
-  }
-
   // リセットスタート
   function resetStart() {
     try {
@@ -443,7 +423,11 @@ function App() {
               <Button variant="primary" className="col-4" onClick={() => rotation()}>
                 回転
               </Button>
-              <ShrinkNameButton variant="primary" className="col-4" onClick={() => continueStart()}>
+              <ShrinkNameButton
+                variant="primary"
+                className="col-4"
+                onClick={() => continueStart(rotationNumberInputed, rotationRate, rotations, setRotations, clearRotationNumberInputed)}
+              >
                 継続スタート
               </ShrinkNameButton>
               <ShrinkNameButton id="resetStartButton" variant="primary" className="col-4" onClick={() => resetStart()}>
