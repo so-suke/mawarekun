@@ -220,6 +220,9 @@ function App() {
       setRotationRate(0);
       setInvestmentCnt(0);
       setRotationNumberTotal(0);
+      setBallNumberComfirm("");
+      setMachineName("");
+      setRemarks("");
     }
   }
 
