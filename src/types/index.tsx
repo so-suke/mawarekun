@@ -5,4 +5,10 @@ export type TypeRotation = {
   rotationRate: number;
 };
 export type TypeStoreName = string;
-export type TypeErrorMsg = { [key: string]: string };
+export type TypeErrorMsg = {
+  resetStart: string;
+  resetStartedAlready: string;
+  rotaionNumberEmpty: string;
+  selectStore: string;
+  notExpectedStoreName: string;
+};

@@ -1,6 +1,13 @@
 import { TypeErrorMsg } from "../types";
 
-// TITLES
+// 店名に関するもの
+export const STORE_NAMES = ["DoruNakano", "LiNakano", "NtNakano"];
+export const STORE_NAMES_EXCHANGE_RATES_MAP = new Map([
+  [STORE_NAMES[0], "4.38"],
+  [STORE_NAMES[1], "4"],
+  [STORE_NAMES[2], "4"],
+]);
+// 選択肢：店名の初期タイトル
 export const SELECT_STORE_TITLE: string = "店名を選択して下さい。";
 // 通常の交換率
 export const EXCHANGE_RATE_NORMAL: number = 4;
@@ -18,9 +25,11 @@ export const ROTATION_MODE: { [key: string]: string } = {
   resetStart: "resetStart",
 };
 
+// エラーメッセージ
 export const ERROR_MSG: TypeErrorMsg = {
   resetStart: "リセットスタートをしましょう",
   resetStartedAlready: "既にリセットスタートされています",
   rotaionNumberEmpty: "回転数を入力しましょう",
   selectStore: "店名を選択して下さい。",
+  notExpectedStoreName: "エラー可能性。存在しない店名が渡されました。",
 };

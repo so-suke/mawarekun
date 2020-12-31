@@ -1,6 +1,6 @@
 import React from "react";
 import { TypeRotation } from "../types";
-import { ROTATION_MODE } from "../constants/main";
+import { ROTATION_MODE } from "../constants";
 import { ListGroup } from "react-bootstrap";
 
 export function Rotations(props: { rotations: TypeRotation[] }) {

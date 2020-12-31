@@ -3,9 +3,11 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Container, Row, Col, FormControl, Form, Button, ListGroup, InputGroup } from "react-bootstrap";
 import { format } from "date-fns";
 // 型定義インポート
-import { TypeRotation, TypeStoreName } from "./types";
+import { TypeRotation } from "./types";
 // 定数定義インポート
 import {
+  STORE_NAMES,
+  STORE_NAMES_EXCHANGE_RATES_MAP,
   EXCHANGE_RATE_NORMAL,
   AMOUNT_ONE_PUSH,
   REST_URL_SPREADSHEET,
@@ -13,7 +15,7 @@ import {
   REPLENISHMENT_AMOUNT_RATIO,
   ROTATION_MODE,
   ERROR_MSG,
-} from "./constants/main";
+} from "./constants";
 
 import { ContinueStartButton } from "./components/ContinueStartButton";
 import { ResetStartButton } from "./components/ResetStartButton";
@@ -31,31 +33,17 @@ function App() {
   const [investmentCnt, setInvestmentCnt] = useState(0);
   const [rotationNumberTotal, setRotationNumberTotal] = useState(0);
   const [border, setBorder] = useState<string>("18.0");
-  const [storeNames, setStoreNames] = useState<TypeStoreName[]>([]);
   const [storeName, setStoreName] = useState("");
   const [machineName, setMachineName] = useState("");
   const [ballNumberComfirm, setBallNumberComfirm] = useState("");
   const [remarks, setRemarks] = useState("");
-  const [storeNamesExchangeRatesMap, setStoreNamesExchangeRatesMap] = useState(new Map());
   const [exchangeRate, setExchangeRate] = useState<string>("");
   // useRef定義
   const rotationListRef = useRef<HTMLDivElement>(null);
   const selectStoreRef = useRef<HTMLSelectElement>(document.createElement("select"));
 
-  // 初期値として、「店名と交換率」をそれぞれ設定する。
-  const initStoreNamesExchangeRates = () => {
-    const storeNamesInit = ["DoruNakano", "LiNakano", "NtNakano"];
-    setStoreNames(storeNamesInit);
-    setStoreNamesExchangeRatesMap(storeNamesExchangeRatesMap.set(storeNamesInit[0], 4.38));
-    setStoreNamesExchangeRatesMap(storeNamesExchangeRatesMap.set(storeNamesInit[1], 4));
-    setStoreNamesExchangeRatesMap(storeNamesExchangeRatesMap.set(storeNamesInit[2], 4));
-  };
-
   // 初回描画時に実行
   useEffect(() => {
-    // 初期値として、それぞれの「店名と交換率」を設定する。
-    initStoreNamesExchangeRates();
-
     // ローカルストレージから各値を取得。
     const investmentCntLocal: string = localStorage.getItem("investmentCnt") || "0";
     const rotationsParsed: TypeRotation[] = JSON.parse(localStorage.getItem("rotations") || "[]");
@@ -99,8 +87,8 @@ function App() {
 
   useEffect(() => {
     // 選択肢の店名が変更されたら、対応した交換率へ変更する。
-    const storeExchangeRate = storeNamesExchangeRatesMap.get(storeName);
-    setExchangeRate(storeExchangeRate);
+    const storeExchangeRate = STORE_NAMES_EXCHANGE_RATES_MAP.get(storeName);
+    setExchangeRate(String(storeExchangeRate));
 
     localStorage.setItem("storeName", storeName);
   }, [storeName]);
@@ -159,8 +147,18 @@ function App() {
 
   // 一回の貸出ボタン玉数
   function getBallNumberOnePush(storeName: string): number {
-    const storeExchangeRate: number = storeNamesExchangeRatesMap.get(storeName);
-    return Number((AMOUNT_ONE_PUSH / storeExchangeRate).toFixed());
+    const exchangeRateDefault = "4";
+    const ballNumberOnePushDefault = 125;
+    try {
+      if (!STORE_NAMES_EXCHANGE_RATES_MAP.has(storeName)) {
+        throw new Error(ERROR_MSG.notExpectedStoreName);
+      }
+      const storeExchangeRate: string = STORE_NAMES_EXCHANGE_RATES_MAP.get(storeName) || exchangeRateDefault;
+      return Number((AMOUNT_ONE_PUSH / Number(storeExchangeRate)).toFixed());
+    } catch (error) {
+      alert(error);
+      return ballNumberOnePushDefault;
+    }
   }
 
   //　回転配列を1行削除する。
@@ -397,7 +395,7 @@ function App() {
                   <InputGroup.Text>店名</InputGroup.Text>
                 </InputGroup.Prepend>
                 <Form.Control as="select" value={storeName} onChange={changeStoreNamesSelect} ref={selectStoreRef}>
-                  <StoreNames storeNames={storeNames} />
+                  <StoreNames storeNames={STORE_NAMES} />
                 </Form.Control>
               </InputGroup>
             </Row>

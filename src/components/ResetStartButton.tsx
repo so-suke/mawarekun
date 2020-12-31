@@ -2,7 +2,7 @@ import React from "react";
 import { format } from "date-fns";
 import { ShrinkNameButton } from "../styledComponents/ShrinkNameButton";
 import { TypeRotation } from "../types";
-import { ERROR_MSG, ROTATION_MODE } from "../constants/main";
+import { ERROR_MSG, ROTATION_MODE } from "../constants";
 
 export function ResetStartButton(props: {
   rotationNumberInputed: string;

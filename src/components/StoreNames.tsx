@@ -1,6 +1,6 @@
 import React from "react";
 import { TypeStoreName } from "../types";
-import { SELECT_STORE_TITLE } from "../constants/main";
+import { SELECT_STORE_TITLE } from "../constants";
 
 export function StoreNames(props: { storeNames: TypeStoreName[] }) {
   const $doms = [
