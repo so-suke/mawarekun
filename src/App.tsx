@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import styled from "styled-components";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Container, Row, Col, FormControl, Form, Button, ListGroup, InputGroup } from "react-bootstrap";
 import { format } from "date-fns";
@@ -7,7 +6,6 @@ import { format } from "date-fns";
 import { TypeRotation, TypeStoreName } from "./types";
 // 定数定義インポート
 import {
-  SELECT_STORE_TITLE,
   EXCHANGE_RATE_NORMAL,
   AMOUNT_ONE_PUSH,
   REST_URL_SPREADSHEET,
@@ -17,17 +15,13 @@ import {
   ERROR_MSG,
 } from "./constants/main";
 
+import { ContinueStartButton } from "./components/ContinueStartButton";
+import { ResetStartButton } from "./components/ResetStartButton";
 import { NumberButtons } from "./components/NumberButtons";
 import { Rotations } from "./components/Rotations";
 import { StoreNames } from "./components/StoreNames";
 
-import { continueStart } from "./functions/rotationSystem";
-
 const axios = require("axios").default;
-
-const ShrinkNameButton = styled(Button)`
-  font-size: 0.4rem;
-`;
 
 function App() {
   // useState定義
@@ -324,36 +318,6 @@ function App() {
     }
   }
 
-  // リセットスタート
-  function resetStart() {
-    try {
-      if (isResetStarted()) {
-        throw ERROR_MSG.resetStartedAlready;
-      }
-      if (rotationNumberInputed === "") {
-        throw ERROR_MSG.rotaionNumberEmpty;
-      }
-      if (selectStoreRef.current.value === "") {
-        throw ERROR_MSG.selectStore;
-      }
-
-      setRotations(
-        rotations.concat({
-          type: ROTATION_MODE.resetStart,
-          rotationNumber: Number(rotationNumberInputed),
-          rotationRateMostRecent: 0,
-          rotationRate: 0,
-        })
-      );
-
-      clearRotationNumberInputed();
-
-      localStorage.setItem("startTime", format(new Date(), "HH:mm"));
-    } catch (error) {
-      alert(error);
-    }
-  }
-
   return (
     <div className="App">
       <Container className="pt-3">
@@ -392,16 +356,23 @@ function App() {
               <Button variant="primary" className="col-4" onClick={() => rotation()}>
                 回転
               </Button>
-              <ShrinkNameButton
-                variant="primary"
-                className="col-4"
-                onClick={() => continueStart(rotationNumberInputed, rotationRate, rotations, setRotations, clearRotationNumberInputed)}
-              >
-                継続スタート
-              </ShrinkNameButton>
-              <ShrinkNameButton id="resetStartButton" variant="primary" className="col-4" onClick={() => resetStart()}>
-                リセットスタート
-              </ShrinkNameButton>
+
+              <ContinueStartButton
+                rotationNumberInputed={rotationNumberInputed}
+                rotationRate={rotationRate}
+                rotations={rotations}
+                clearRotationNumberInputed={clearRotationNumberInputed}
+                setRotations={setRotations}
+              />
+
+              <ResetStartButton
+                rotationNumberInputed={rotationNumberInputed}
+                rotations={rotations}
+                selectStoreRef={selectStoreRef}
+                isResetStarted={isResetStarted}
+                clearRotationNumberInputed={clearRotationNumberInputed}
+                setRotations={setRotations}
+              />
             </Row>
 
             <Row>
