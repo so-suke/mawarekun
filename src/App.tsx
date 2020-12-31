@@ -231,8 +231,8 @@ function App() {
     }
   }
 
-  // スプレッドシートへ稼働記録を書き込む
-  function writeWorkRecordToSpreadsheet(): void {
+  // 最後の結果書込処理（全行削除も行う）
+  function writeWorkResultAndDeleteAllRotation() {
     const now = new Date();
     const dateFormattedStart = format(now, "yyyy/MM/dd");
     const timeFormattedStart = localStorage.getItem("startTime");
@@ -253,39 +253,11 @@ function App() {
       .post(REST_URL_SPREADSHEET, params)
       .then(function (response: any) {
         alert("書込が成功しました。");
+        deleteAllRotation();
       })
       .catch(function (error: any) {
         alert(error);
       });
-  }
-
-  // スプレッドシートへのペースト用テキストを取得。
-  function getWorkRecordForSpreadSheet(): string {
-    const now = new Date();
-    const dateFormattedStart = format(now, "yyyy/MM/dd");
-    const timeFormattedStart = localStorage.getItem("startTime");
-    const timeFormattedNow = format(now, "HH:mm");
-
-    const delimiter = "	";
-    // 下記でも動くようであれば、後々こちらに変更する。
-    // const delimiter = "\t";
-
-    return [
-      `${dateFormattedStart} ${timeFormattedStart}〜${timeFormattedNow}`,
-      `ボーダー：${border}`,
-      `回転率：${rotationRate}`,
-      `回転単価：${rotationUnitPrice}`,
-      `総回転数：${rotationNumberTotal}`,
-      `${getWorkAmount()}`,
-      `${machineName}`,
-      `${storeName}`,
-      `${remarks}`,
-    ].join(delimiter);
-  }
-
-  // 稼働記録をコピー
-  function copyWorkRecord() {
-    navigator.clipboard.writeText(getWorkRecordForSpreadSheet());
   }
 
   // 回転数の短縮入力の判別
@@ -398,9 +370,6 @@ function App() {
             </p>
 
             <Row>
-              <Button className="mr-1 mb-1" variant="primary" onClick={() => copyWorkRecord()}>
-                コピー
-              </Button>
               <Button className="mb-1" variant="primary" onClick={() => deleteOneRotation()}>
                 1行削除
               </Button>
@@ -482,8 +451,8 @@ function App() {
               </InputGroup>
             </Row>
             <Row>
-              <Button className="mt-5" variant="primary" onClick={() => writeWorkRecordToSpreadsheet()}>
-                シート書込
+              <Button className="mt-5" variant="primary" onClick={() => writeWorkResultAndDeleteAllRotation()}>
+                表書込＆全削
               </Button>
             </Row>
 
