@@ -229,16 +229,20 @@ function App() {
   // 最後の結果書込処理（全行削除も行う）
   function writeWorkResultAndDeleteAllRotation() {
     const now = new Date();
-    const dateFormattedStart = format(now, "yyyy/MM/dd");
-    const timeFormattedStart = localStorage.getItem("startTime");
-    const timeFormattedNow = format(now, "HH:mm");
+    const date = format(now, "yyyy/MM/dd");
+    const timeStart = localStorage.getItem("startTime");
+    const timeEnd = format(now, "HH:mm");
+
+    console.log(rotationNumberTotal);
 
     const params = new URLSearchParams();
-    params.append("date", `${dateFormattedStart} ${timeFormattedStart}〜${timeFormattedNow}`);
-    params.append("border", `ボーダー：${border}`);
-    params.append("rotationRate", `回転率：${rotationRate}`);
-    params.append("rotationUnitPrice", `回転単価：${rotationUnitPrice}`);
-    params.append("rotationNumberTotal", `総回転数：${rotationNumberTotal}`);
+    params.append("date", `${date}`);
+    params.append("timeStart", `${timeStart}`);
+    params.append("timeEnd", `${timeEnd}`);
+    params.append("border", `${border}`);
+    params.append("rotationRate", `${rotationRate}`);
+    params.append("rotationUnitPrice", `${rotationUnitPrice}`);
+    params.append("rotationNumberTotal", `${rotationNumberTotal}`);
     params.append("workAmount", `${getWorkAmount()}`);
     params.append("machineName", `${machineName}`);
     params.append("storeName", `${storeName}`);
