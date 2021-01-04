@@ -233,8 +233,6 @@ function App() {
     const timeStart = localStorage.getItem("startTime");
     const timeEnd = format(now, "HH:mm");
 
-    console.log(rotationNumberTotal);
-
     const params = new URLSearchParams();
     params.append("date", `${date}`);
     params.append("timeStart", `${timeStart}`);
