@@ -262,16 +262,26 @@ function App() {
     return String(rotationNumberInputed).length < 3 && String(rotations[rotations.length - 1].rotationNumber).length > 1;
   }
 
-  // 回転数の短縮入力：ひとまず回転数が3桁以下の場合のみ対応
+  // 回転数の短縮入力：回転数が4桁以下の場合のみ対応（5桁以上は不必要のため、未検証）
   function getRotationNumberByShortInputIfNeeded(): number {
     let rotationNumberInputedClone: number = Number(rotationNumberInputed);
     if (shouldShortInput()) {
-      const convertToThreeDigits: string = ("000" + rotations[rotations.length - 1].rotationNumber).slice(-3);
-      const lastTwoDigits: number = Number(String(rotations[rotations.length - 1].rotationNumber).slice(1, 3));
-      const baseNumberOfHundreds: number =
-        rotationNumberInputedClone > lastTwoDigits ? Number(convertToThreeDigits[0]) : Number(convertToThreeDigits[0]) + 1;
+      // 最後の回転数の桁数
+      const digitsLastRotation = String(rotations[rotations.length - 1].rotationNumber).length;
+      // 短縮判定の際に比較する桁数（2なので10の位まで）
+      // 99なら99, 101なら1, 199なら99, 1010なら10
+      const digitsCompare = 2;
+      const numberBeCompared: number = Number(
+        String(rotations[rotations.length - 1].rotationNumber).slice(digitsLastRotation - digitsCompare, digitsLastRotation)
+      );
+      // ベースとなる数を作成する。（ベースとは、100倍して・・・）
+      const baseNumberSourceMayBeMovedUp = String(rotations[rotations.length - 1].rotationNumber).slice(0, digitsLastRotation - digitsCompare);
+      const baseNumberSource: number =
+        rotationNumberInputedClone > numberBeCompared ? Number(baseNumberSourceMayBeMovedUp) : Number(baseNumberSourceMayBeMovedUp) + 1;
 
-      const baseNumber: number = baseNumberOfHundreds * 100;
+      // 入力回転数にベース数（100倍されたもの）を足す。
+      const multipleBaseNumber = 100;
+      const baseNumber: number = baseNumberSource * multipleBaseNumber;
       rotationNumberInputedClone += baseNumber;
     }
 
