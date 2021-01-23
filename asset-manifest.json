@@ -1,8 +1,8 @@
 {
   "files": {
     "main.css": "/mawarekun/static/css/main.a411a19e.chunk.css",
-    "main.js": "/mawarekun/static/js/main.bcda69c5.chunk.js",
-    "main.js.map": "/mawarekun/static/js/main.bcda69c5.chunk.js.map",
+    "main.js": "/mawarekun/static/js/main.28fa14f5.chunk.js",
+    "main.js.map": "/mawarekun/static/js/main.28fa14f5.chunk.js.map",
     "runtime-main.js": "/mawarekun/static/js/runtime-main.34060ba6.js",
     "runtime-main.js.map": "/mawarekun/static/js/runtime-main.34060ba6.js.map",
     "static/css/2.20aa2d7b.chunk.css": "/mawarekun/static/css/2.20aa2d7b.chunk.css",
@@ -18,6 +18,6 @@
     "static/css/2.20aa2d7b.chunk.css",
     "static/js/2.f1d96b89.chunk.js",
     "static/css/main.a411a19e.chunk.css",
-    "static/js/main.bcda69c5.chunk.js"
+    "static/js/main.28fa14f5.chunk.js"
   ]
 }
