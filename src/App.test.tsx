@@ -5,8 +5,8 @@ import "@testing-library/jest-dom/extend-expect";
 import App from "./App";
 
 // 準備作業として、回転数, 店名, ボーダーを事前に入力する。
-const prepare = (selectboxStoreName: HTMLElement, inputBorder: HTMLElement) => {
-  fireEvent.change(selectboxStoreName, { target: { value: "DoruNakano" } });
+const prepare = (selectBoxStoreName: HTMLElement, inputBorder: HTMLElement) => {
+  fireEvent.change(selectBoxStoreName, { target: { value: "DoruNakano" } });
   fireEvent.change(inputBorder, { target: { value: "18.0" } });
 };
 
@@ -27,8 +27,9 @@ describe("App", () => {
     const buttonResetStart = screen.getByRole("button", { name: "リセットスタート" });
     const buttonRotation = screen.getByRole("button", { name: "回転" });
     const buttonDeleteAllRotation = screen.getByRole("button", { name: "全行削除" });
-    const selectboxStoreName = screen.getByRole("combobox");
-    const inputBorder = screen.getByTestId("input-border");
+    const selectBoxStoreName = screen.getByRole("combobox");
+    const inputBallNumberConfirm = screen.getByTestId("ball-number-confirm");
+    const inputBorder = screen.getByTestId("border");
     const workAmount = screen.getByText("仕事量：");
 
     // 複数回使用するため定義
@@ -36,9 +37,10 @@ describe("App", () => {
       userEvent.click(buttonDeleteAllRotation);
     };
 
-    prepare(selectboxStoreName, inputBorder);
+    prepare(selectBoxStoreName, inputBorder);
 
-    // 通常の回転数テスト
+    // 通常の回転数テストと確認用玉数テスト
+    fireEvent.change(inputBallNumberConfirm, { target: { value: "1000" } });
     await userEvent.click(buttonsNumber.zero);
     await userEvent.click(buttonResetStart);
     await userEvent.click(buttonsNumber.one);
@@ -48,6 +50,7 @@ describe("App", () => {
     await userEvent.click(buttonsNumber.two);
     await userEvent.click(buttonsNumber.two);
     await userEvent.click(buttonRotation);
+    expect(inputBallNumberConfirm).toHaveValue(772);
     expect(workAmount).toHaveTextContent("310");
 
     // 短縮入力テスト①　99から

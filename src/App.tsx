@@ -8,14 +8,16 @@ import { TypeRotation } from "./types";
 import {
   STORE_NAMES,
   STORE_NAMES_EXCHANGE_RATES_MAP,
+  STORE_NAME_BALL_NUMBER_LENT,
   EXCHANGE_RATE_NORMAL,
-  AMOUNT_ONE_PUSH,
   REST_URL_SPREADSHEET,
   REPLENISHMENT_AMOUNT,
   REPLENISHMENT_AMOUNT_RATIO,
   ROTATION_MODE,
   ERROR_MSG,
 } from "./constants";
+// 便利系関数インポート
+import { last } from "./utils";
 
 import { ContinueStartButton } from "./components/ContinueStartButton";
 import { ResetStartButton } from "./components/ResetStartButton";
@@ -35,7 +37,7 @@ function App() {
   const [border, setBorder] = useState<string>("18.0");
   const [storeName, setStoreName] = useState("");
   const [machineName, setMachineName] = useState("");
-  const [ballNumberComfirm, setBallNumberComfirm] = useState("");
+  const [ballNumberConfirm, setBallNumberConfirm] = useState("");
   const [remarks, setRemarks] = useState("");
   const [exchangeRate, setExchangeRate] = useState<string>("");
   // useRef定義
@@ -49,7 +51,7 @@ function App() {
     const rotationsParsed: TypeRotation[] = JSON.parse(localStorage.getItem("rotations") || "[]");
     const storeNameLocal: string = localStorage.getItem("storeName") || "";
     const machineNameLocal: string = localStorage.getItem("machineName") || "";
-    const ballNumberComfirmLocal: string = localStorage.getItem("ballNumberComfirm") || "";
+    const ballNumberConfirmLocal: string = localStorage.getItem("ballNumberConfirm") || "";
     const borderLocal: string = localStorage.getItem("border") || "";
     const remarksLocal: string = localStorage.getItem("remarks") || "";
 
@@ -57,7 +59,7 @@ function App() {
     setStoreName(storeNameLocal);
     setRotations(rotationsParsed);
     setMachineName(machineNameLocal);
-    setBallNumberComfirm(ballNumberComfirmLocal);
+    setBallNumberConfirm(ballNumberConfirmLocal);
     setBorder(borderLocal);
     setRemarks(remarksLocal);
     setRotationRate(calcRotationRate(rotationsParsed));
@@ -78,8 +80,8 @@ function App() {
   }, [border]);
 
   useEffect(() => {
-    localStorage.setItem("ballNumberComfirm", ballNumberComfirm);
-  }, [ballNumberComfirm]);
+    localStorage.setItem("ballNumberConfirm", ballNumberConfirm);
+  }, [ballNumberConfirm]);
 
   useEffect(() => {
     localStorage.setItem("remarks", remarks);
@@ -123,9 +125,9 @@ function App() {
   }
 
   // 回転数入力ミス防止用玉数の変更
-  function changeBallNumberComfirm(event: React.ChangeEvent<HTMLInputElement>) {
-    const ballNumberComfirm = event.target.value;
-    setBallNumberComfirm(ballNumberComfirm);
+  function changeBallNumberConfirm(event: React.ChangeEvent<HTMLInputElement>) {
+    const ballNumberConfirm = event.target.value;
+    setBallNumberConfirm(ballNumberConfirm);
   }
 
   function changeRotationNumberInputed(event: React.ChangeEvent<HTMLInputElement>) {
@@ -146,18 +148,16 @@ function App() {
   }
 
   // 一回の貸出ボタン玉数
-  function getBallNumberOnePush(storeName: string): number {
-    const exchangeRateDefault = "4";
-    const ballNumberOnePushDefault = 125;
+  function getBallNumberLent(storeName: string): number {
+    const ballNumberLentDefault = 125;
     try {
-      if (!STORE_NAMES_EXCHANGE_RATES_MAP.has(storeName)) {
+      if (!STORE_NAME_BALL_NUMBER_LENT.hasOwnProperty(storeName)) {
         throw new Error(ERROR_MSG.notExpectedStoreName);
       }
-      const storeExchangeRate: string = STORE_NAMES_EXCHANGE_RATES_MAP.get(storeName) || exchangeRateDefault;
-      return Number((AMOUNT_ONE_PUSH / Number(storeExchangeRate)).toFixed());
+      return STORE_NAME_BALL_NUMBER_LENT[storeName];
     } catch (error) {
       alert(error);
-      return ballNumberOnePushDefault;
+      return ballNumberLentDefault;
     }
   }
 
@@ -168,8 +168,7 @@ function App() {
     if (rotationsLength === 0) return;
 
     // 投資回数の調整
-    const lastRotation = rotations[rotations.length - 1];
-    if (lastRotation.type === ROTATION_MODE.normal) {
+    if (last(rotations).type === ROTATION_MODE.normal) {
       setInvestmentCnt(investmentCnt - 1);
     }
 
@@ -182,20 +181,19 @@ function App() {
     if (rotationsDeleted.length === 1 || rotationsDeleted.length === 0) {
       setRotationRate(0);
     } else {
-      setRotationRate(rotationsDeleted[rotationsDeleted.length - 1].rotationRate);
+      setRotationRate(last(rotationsDeleted).rotationRate);
     }
 
     // 総回転数の更新
-    if (lastRotation.type === ROTATION_MODE.normal && rotationsDeleted.length > 0) {
-      const rotationNumberDiffShouldSub =
-        rotations[rotations.length - 1].rotationNumber - rotationsDeleted[rotationsDeleted.length - 1].rotationNumber;
+    if (last(rotations).type === ROTATION_MODE.normal && rotationsDeleted.length > 0) {
+      const rotationNumberDiffShouldSub = last(rotations).rotationNumber - last(rotationsDeleted).rotationNumber;
       setRotationNumberTotal(rotationNumberTotal - rotationNumberDiffShouldSub);
     }
 
     setRotations(rotationsDeleted);
 
     // 確認用玉数を計算
-    setBallNumberComfirm(String(Number(ballNumberComfirm) + getBallNumberOnePush(storeName)));
+    setBallNumberConfirm(String(Number(ballNumberConfirm) + getBallNumberLent(storeName)));
   }
 
   // 画面の初期読込時に使用
@@ -211,7 +209,7 @@ function App() {
   // 画面の初期読込時に使用
   function calcRotationRate(rotations: TypeRotation[]) {
     if (rotations.length === 0) return 0;
-    return rotations[rotations.length - 1].rotationRate;
+    return last(rotations).rotationRate;
   }
 
   function deleteAllRotation() {
@@ -220,7 +218,7 @@ function App() {
       setRotationRate(0);
       setInvestmentCnt(0);
       setRotationNumberTotal(0);
-      setBallNumberComfirm("");
+      setBallNumberConfirm("");
       setMachineName("");
       setRemarks("");
     }
@@ -257,35 +255,30 @@ function App() {
       });
   }
 
-  // 回転数の短縮入力の判別
+  // 回転数の短縮入力の判別（返り値は、回転数）
   function shouldShortInput() {
-    return String(rotationNumberInputed).length < 3 && String(rotations[rotations.length - 1].rotationNumber).length > 1;
+    return String(rotationNumberInputed).length < 3 && String(last(rotations).rotationNumber).length > 1;
   }
 
-  // 回転数の短縮入力：回転数が4桁以下の場合のみ対応（5桁以上は不必要のため、未検証）
-  function getRotationNumberByShortInputIfNeeded(): number {
-    let rotationNumberInputedClone: number = Number(rotationNumberInputed);
-    if (shouldShortInput()) {
-      // 最後の回転数の桁数
-      const digitsLastRotation = String(rotations[rotations.length - 1].rotationNumber).length;
-      // 短縮判定の際に比較する桁数（2なので10の位まで）
-      // 99なら99, 101なら1, 199なら99, 1010なら10
-      const digitsCompare = 2;
-      const numberBeCompared: number = Number(
-        String(rotations[rotations.length - 1].rotationNumber).slice(digitsLastRotation - digitsCompare, digitsLastRotation)
-      );
-      // ベースとなる数を作成する。（ベースとは、100倍して・・・）
-      const baseNumberSourceMayBeMovedUp = String(rotations[rotations.length - 1].rotationNumber).slice(0, digitsLastRotation - digitsCompare);
-      const baseNumberSource: number =
-        rotationNumberInputedClone > numberBeCompared ? Number(baseNumberSourceMayBeMovedUp) : Number(baseNumberSourceMayBeMovedUp) + 1;
+  // 短縮入力された「回転数を返す」
+  function getRotationNumberShortInputed(): number {
+    const digitsHowMuch = 2;
+    const rotationNumberLast: string = String(last(rotations).rotationNumber);
+    const isMoveUp = (beCompared: number, rotationNumberInputed: number) => beCompared > rotationNumberInputed;
+    const createBefore = (): number => {
+      // 分解パート
+      const numberBeMovedUpIfNeed = Number(rotationNumberLast.slice(0, -digitsHowMuch));
+      const numberBeCompared = Number(rotationNumberLast.slice(-digitsHowMuch));
+      // 「比較パート」と「繰上げパート」
+      const before = isMoveUp(numberBeCompared, Number(rotationNumberInputed)) ? numberBeMovedUpIfNeed + 1 : numberBeMovedUpIfNeed;
 
-      // 入力回転数にベース数（100倍されたもの）を足す。
-      const multipleBaseNumber = 100;
-      const baseNumber: number = baseNumberSource * multipleBaseNumber;
-      rotationNumberInputedClone += baseNumber;
-    }
+      return before;
+    };
 
-    return rotationNumberInputedClone;
+    const before = createBefore();
+    const after = ("00" + rotationNumberInputed).slice(-digitsHowMuch);
+    // 連結パート
+    return Number(before + after);
   }
 
   // 通常回転（回転ボタン押下時の処理）
@@ -298,8 +291,8 @@ function App() {
       // 投資回数の計算
       const investmentCntNow = investmentCnt + 1;
       // 必要であれば短縮入力を効かせる。
-      const rotationNumberInputedClone = getRotationNumberByShortInputIfNeeded();
-      const rotationNumberDiffFromLast = Number(rotationNumberInputedClone) - rotations[rotations.length - 1].rotationNumber;
+      const rotationNumberInputedClone = shouldShortInput() ? getRotationNumberShortInputed() : Number(rotationNumberInputed);
+      const rotationNumberDiffFromLast = Number(rotationNumberInputedClone) - last(rotations).rotationNumber;
       //　交換率の比：通常交換率'4'と実交換率の比。回転率計算に用いる。
       const exchangeRateRatio: number = Number(exchangeRate) / EXCHANGE_RATE_NORMAL;
       const rotationRateMostRecent = Number((rotationNumberDiffFromLast * REPLENISHMENT_AMOUNT_RATIO * exchangeRateRatio).toFixed(1));
@@ -325,7 +318,7 @@ function App() {
         })
       );
       // 確認用玉数を計算
-      setBallNumberComfirm(String(Number(ballNumberComfirm) - getBallNumberOnePush(storeName)));
+      setBallNumberConfirm(String(Number(ballNumberConfirm) - getBallNumberLent(storeName)));
     } catch (error) {
       alert(error);
     }
@@ -393,7 +386,7 @@ function App() {
                 <InputGroup.Prepend>
                   <InputGroup.Text>確認用玉数</InputGroup.Text>
                 </InputGroup.Prepend>
-                <FormControl value={ballNumberComfirm} onChange={changeBallNumberComfirm} type="number" />
+                <FormControl value={ballNumberConfirm} data-testid="ball-number-confirm" onChange={changeBallNumberConfirm} type="number" />
               </InputGroup>
             </Row>
             <Row>
@@ -401,7 +394,7 @@ function App() {
                 <InputGroup.Prepend>
                   <InputGroup.Text>ボーダー</InputGroup.Text>
                 </InputGroup.Prepend>
-                <FormControl value={border} data-testid="input-border" onChange={changeBorder} />
+                <FormControl value={border} data-testid="border" onChange={changeBorder} />
               </InputGroup>
             </Row>
             <Row>

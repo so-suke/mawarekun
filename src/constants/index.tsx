@@ -3,15 +3,20 @@ import { TypeErrorMsg } from "../types";
 // 店名に関するもの
 export const STORE_NAMES = ["DoruNakano", "LiNakano", "NtNakano"];
 export const STORE_NAMES_EXCHANGE_RATES_MAP = new Map([
-  [STORE_NAMES[0], "4.38"],
-  [STORE_NAMES[1], "4"],
-  [STORE_NAMES[2], "4"],
+  [STORE_NAMES[0], 4.38],
+  [STORE_NAMES[1], 4],
+  [STORE_NAMES[2], 4],
 ]);
+export const STORE_NAME_BALL_NUMBER_LENT = {
+  [STORE_NAMES[0]]: 114,
+  [STORE_NAMES[1]]: 125,
+  [STORE_NAMES[2]]: 125,
+};
 // 選択肢：店名の初期タイトル
 export const SELECT_STORE_TITLE: string = "店名を選択して下さい。";
 // 通常の交換率
 export const EXCHANGE_RATE_NORMAL: number = 4;
-// ワンプッシュ当たりの金額
+// ワンプッシュ辺りの金額
 export const AMOUNT_ONE_PUSH = 500;
 // スプレッドシートREST_URL
 export const REST_URL_SPREADSHEET = "https://script.google.com/macros/s/AKfycbwAEFQ6VWnrJ67EjQiYd8WeEv0D2ogBpV2GYDgxucx9C5gf1Dmd/exec";
