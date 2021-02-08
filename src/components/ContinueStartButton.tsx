@@ -9,6 +9,7 @@ export function ContinueStartButton(props: {
   rotations: TypeRotation[];
   clearRotationNumberInputed: Function;
   setRotations: Function;
+  setIsCorrectBallNumberConfirm: Function;
 }) {
   // 継続スタート
   const continueStart = () => {
@@ -16,6 +17,8 @@ export function ContinueStartButton(props: {
       if (props.rotationNumberInputed === "") {
         throw ERROR_MSG.rotaionNumberEmpty;
       }
+
+      props.setIsCorrectBallNumberConfirm(false);
 
       props.setRotations(
         props.rotations.concat({

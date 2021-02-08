@@ -18,12 +18,14 @@ import {
 } from "./constants";
 // 便利系関数インポート
 import { last } from "./utils";
-
+// 各コンポーネントをインポート
 import { ContinueStartButton } from "./components/ContinueStartButton";
 import { ResetStartButton } from "./components/ResetStartButton";
 import { NumberButtons } from "./components/NumberButtons";
 import { Rotations } from "./components/Rotations";
 import { StoreNames } from "./components/StoreNames";
+// css modulesインポート
+import styles from './cssModules/App.module.css'; 
 
 const axios = require("axios").default;
 
@@ -40,6 +42,8 @@ function App() {
   const [ballNumberConfirm, setBallNumberConfirm] = useState("");
   const [remarks, setRemarks] = useState("");
   const [exchangeRate, setExchangeRate] = useState<string>("");
+  const [isCorrectBallNumberConfirm, setIsCorrectBallNumberConfirm] = useState(true);
+
   // useRef定義
   const rotationListRef = useRef<HTMLDivElement>(null);
   const selectStoreRef = useRef<HTMLSelectElement>(document.createElement("select"));
@@ -167,6 +171,9 @@ function App() {
 
     if (rotationsLength === 0) return;
 
+    // 削除時は、一律で正しいことにする。
+    setIsCorrectBallNumberConfirm(true);
+
     // 投資回数の調整
     if (last(rotations).type === ROTATION_MODE.normal) {
       setInvestmentCnt(investmentCnt - 1);
@@ -287,6 +294,13 @@ function App() {
       if (isResetStarted() === false) {
         throw ERROR_MSG.resetStart;
       }
+      // 以下の場合に、「確認用玉数チェック」をfalseにする。
+      // マイナスに突入しそうな場合、未入力の場合（Numberで変換すると0になるので特別記入しなくていい）
+      if (Number(ballNumberConfirm) < getBallNumberLent(storeName)) {
+        setIsCorrectBallNumberConfirm(false);
+      } else {
+        setIsCorrectBallNumberConfirm(true);
+      }
 
       // 投資回数の計算
       const investmentCntNow = investmentCnt + 1;
@@ -326,7 +340,7 @@ function App() {
 
   return (
     <div className="App">
-      <Container className="pt-3">
+      <Container className={`pt-3 ${isCorrectBallNumberConfirm ? "" : styles.bg_warning}`}>
         <Row>
           <Col>
             <p className="mb-0">
@@ -369,6 +383,7 @@ function App() {
                 rotations={rotations}
                 clearRotationNumberInputed={clearRotationNumberInputed}
                 setRotations={setRotations}
+                setIsCorrectBallNumberConfirm={setIsCorrectBallNumberConfirm}
               />
 
               <ResetStartButton
