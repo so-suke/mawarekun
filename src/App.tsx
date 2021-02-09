@@ -409,7 +409,7 @@ function App() {
                 <InputGroup.Prepend>
                   <InputGroup.Text>ボーダー</InputGroup.Text>
                 </InputGroup.Prepend>
-                <FormControl value={border} data-testid="border" onChange={changeBorder} />
+                <FormControl value={border} data-testid="border" onChange={changeBorder} type="number" />
               </InputGroup>
             </Row>
             <Row>
