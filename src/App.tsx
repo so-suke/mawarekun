@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Container, Row, Col, FormControl, Form, Button, ListGroup, InputGroup } from "react-bootstrap";
 import { format } from "date-fns";
@@ -25,18 +25,19 @@ import { NumberButtons } from "./components/NumberButtons";
 import { Rotations } from "./components/Rotations";
 import { StoreNames } from "./components/StoreNames";
 // css modulesインポート
-import styles from './cssModules/App.module.css'; 
+import styles from "./cssModules/App.module.css";
 
 const axios = require("axios").default;
 
 function App() {
   // useState定義
+  const [pageIndex, setPageIndex] = useState(0);
   const [rotationNumberInputed, setRotationNumberInputed] = useState<string>("");
   const [rotations, setRotations] = useState<TypeRotation[]>([]);
   const [rotationRate, setRotationRate] = useState(0);
   const [investmentCnt, setInvestmentCnt] = useState(0);
   const [rotationNumberTotal, setRotationNumberTotal] = useState(0);
-  const [border, setBorder] = useState<string>("18.0");
+  const [border, setBorder] = useState<string>("");
   const [storeName, setStoreName] = useState("");
   const [machineName, setMachineName] = useState("");
   const [ballNumberConfirm, setBallNumberConfirm] = useState("");
@@ -48,16 +49,30 @@ function App() {
   const rotationListRef = useRef<HTMLDivElement>(null);
   const selectStoreRef = useRef<HTMLSelectElement>(document.createElement("select"));
 
+  const setItemLocalStorage = useCallback(
+    (keyName: string, setted: string) => {
+      localStorage.setItem(`${keyName}_${pageIndex}`, setted);
+    },
+    [pageIndex]
+  );
+  const getItemLocalStorage = useCallback(
+    (keyName: string, init: string) => {
+      const result = localStorage.getItem(`${keyName}_${pageIndex}`) || init;
+      return result;
+    },
+    [pageIndex]
+  );
+
   // 初回描画時に実行
   useEffect(() => {
     // ローカルストレージから各値を取得。
-    const investmentCntLocal: string = localStorage.getItem("investmentCnt") || "0";
-    const rotationsParsed: TypeRotation[] = JSON.parse(localStorage.getItem("rotations") || "[]");
-    const storeNameLocal: string = localStorage.getItem("storeName") || "";
-    const machineNameLocal: string = localStorage.getItem("machineName") || "";
-    const ballNumberConfirmLocal: string = localStorage.getItem("ballNumberConfirm") || "";
-    const borderLocal: string = localStorage.getItem("border") || "";
-    const remarksLocal: string = localStorage.getItem("remarks") || "";
+    const investmentCntLocal: string = getItemLocalStorage("investmentCnt", "0");
+    const rotationsParsed: TypeRotation[] = JSON.parse(getItemLocalStorage("rotations", "[]"));
+    const storeNameLocal: string = getItemLocalStorage("storeName", "");
+    const machineNameLocal: string = getItemLocalStorage("machineName", "");
+    const ballNumberConfirmLocal: string = getItemLocalStorage("ballNumberConfirm", "");
+    const borderLocal: string = getItemLocalStorage("border", "18.0");
+    const remarksLocal: string = getItemLocalStorage("remarks", "");
 
     setInvestmentCnt(Number(investmentCntLocal));
     setStoreName(storeNameLocal);
@@ -68,36 +83,36 @@ function App() {
     setRemarks(remarksLocal);
     setRotationRate(calcRotationRate(rotationsParsed));
     setRotationNumberTotal(calcRotationNumberTotal(rotationsParsed));
-  }, []);
+  }, [getItemLocalStorage]);
 
   useEffect(() => {
     (rotationListRef as any).current.scrollTop = (rotationListRef as any).current.scrollHeight;
-    localStorage.setItem("rotations", JSON.stringify(rotations));
-  }, [rotations]);
+    setItemLocalStorage("rotations", JSON.stringify(rotations));
+  }, [rotations, setItemLocalStorage]);
 
   useEffect(() => {
-    localStorage.setItem("investmentCnt", "" + investmentCnt);
-  }, [investmentCnt]);
+    setItemLocalStorage("investmentCnt", "" + investmentCnt);
+  }, [investmentCnt, setItemLocalStorage]);
 
   useEffect(() => {
-    localStorage.setItem("border", border);
-  }, [border]);
+    setItemLocalStorage("border", border);
+  }, [border, setItemLocalStorage]);
 
   useEffect(() => {
-    localStorage.setItem("ballNumberConfirm", ballNumberConfirm);
-  }, [ballNumberConfirm]);
+    setItemLocalStorage("ballNumberConfirm", ballNumberConfirm);
+  }, [ballNumberConfirm, setItemLocalStorage]);
 
   useEffect(() => {
-    localStorage.setItem("remarks", remarks);
-  }, [remarks]);
+    setItemLocalStorage("remarks", remarks);
+  }, [remarks, setItemLocalStorage]);
 
   useEffect(() => {
     // 選択肢の店名が変更されたら、対応した交換率へ変更する。
     const storeExchangeRate = STORE_NAMES_EXCHANGE_RATES_MAP.get(storeName);
     setExchangeRate(String(storeExchangeRate));
 
-    localStorage.setItem("storeName", storeName);
-  }, [storeName]);
+    setItemLocalStorage("storeName", storeName);
+  }, [storeName, setItemLocalStorage]);
 
   // ■useMemo系
   // 「回転単価」が「ボーダーまたは回転率」に対する「導出項目」のため。
@@ -119,7 +134,7 @@ function App() {
   function changeMachineName(event: React.ChangeEvent<HTMLInputElement>) {
     const machineName = event.target.value;
     setMachineName(machineName);
-    localStorage.setItem("machineName", machineName);
+    setItemLocalStorage("machineName", machineName);
   }
 
   // 備考の変更
@@ -163,6 +178,15 @@ function App() {
       alert(error);
       return ballNumberLentDefault;
     }
+  }
+
+  // 前のページへ移動
+  function toPrevPage() {
+    setPageIndex(pageIndex - 1);
+  }
+  // 次のページへ移動
+  function toNextPage() {
+    setPageIndex(pageIndex + 1);
   }
 
   //　回転配列を1行削除する。
@@ -353,9 +377,16 @@ function App() {
               仕事量：<span>{getWorkAmount()}</span>
             </p>
 
+            <Row></Row>
             <Row>
               <Button className="mb-1" variant="primary" onClick={() => deleteOneRotation()}>
                 1行削除
+              </Button>
+              <Button className="mb-1" variant="primary" onClick={() => toPrevPage()}>
+                前
+              </Button>
+              <Button className="mb-1" variant="primary" onClick={() => toNextPage()}>
+                次
               </Button>
             </Row>
 
