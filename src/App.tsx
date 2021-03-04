@@ -398,7 +398,7 @@ function App() {
               placeholder="回転数入力"
             />
 
-            <Row className="m-0 mb-2">
+            <Row className="mb-2">
               <NumberButtons setRotationNumberInputed={setRotationNumberInputed} rotationNumberInputed={rotationNumberInputed} />
               <Button variant="primary" className="col-4" onClick={() => clearRotationNumberInputed()}>
                 C
