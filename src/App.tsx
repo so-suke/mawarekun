@@ -368,17 +368,10 @@ function App() {
         <Row>
           <Col>
             <p className="mb-0">
-              回転単価：<span>{rotationUnitPrice}</span>
-            </p>
-            <p className="mb-0">
-              総回転数：<span>{rotationNumberTotal}</span>
-            </p>
-            <p className="mb-0">
-              仕事量：<span>{getWorkAmount()}</span>
+              <span>{rotationUnitPrice}</span> * <span>{rotationNumberTotal}</span> = <span data-testid="work-amount">{getWorkAmount()}</span>
             </p>
 
-            <Row></Row>
-            <Row>
+            <Row className="justify-content-between">
               <Button className="mb-1" variant="primary" onClick={() => deleteOneRotation()}>
                 1行削除
               </Button>
@@ -404,7 +397,8 @@ function App() {
                 C
               </Button>
               <Button variant="primary" className="col-4"></Button>
-              <Button variant="primary" className="col-4" onClick={() => rotation()}>
+
+              <Button variant="primary" className="col-4 py-3" onClick={() => rotation()}>
                 回転
               </Button>
 
@@ -454,10 +448,6 @@ function App() {
               </InputGroup>
             </Row>
             <Row>
-              <div className="mr-2">交換率:</div>
-              <div>{exchangeRate}</div>
-            </Row>
-            <Row>
               <InputGroup size="sm">
                 <InputGroup.Prepend>
                   <InputGroup.Text>機種名</InputGroup.Text>
@@ -472,6 +462,10 @@ function App() {
                 </InputGroup.Prepend>
                 <Form.Control as="textarea" rows={2} value={remarks} onChange={changeRemarks} />
               </InputGroup>
+            </Row>
+            <Row>
+              <div className="mr-2">交換率:</div>
+              <div>{exchangeRate}</div>
             </Row>
             <Row>
               <Button className="mt-5" variant="primary" onClick={() => writeWorkResultAndDeleteAllRotation()}>

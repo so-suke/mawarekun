@@ -30,7 +30,8 @@ describe("App", () => {
     const selectBoxStoreName = screen.getByRole("combobox");
     const inputBallNumberConfirm = screen.getByTestId("ball-number-confirm");
     const inputBorder = screen.getByTestId("border");
-    const workAmount = screen.getByText("仕事量：");
+    const workAmount = screen.getByTestId("work-amount");
+    // const workAmount = screen.getByText("仕事量：");
 
     // 複数回使用するため定義
     const clickDeleteAllRotationButton = () => {
