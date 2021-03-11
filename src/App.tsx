@@ -66,6 +66,12 @@ function App() {
     [pageIndex]
   );
 
+  // test
+  useEffect(() => {
+    setBallNumberAutoRotation("2200");
+    setRotationNumberAutoRotation("102");
+  }, []);
+
   // 初回描画時に実行
   useEffect(() => {
     // ローカルストレージから各値を取得。
@@ -346,16 +352,23 @@ function App() {
       return sleep(1).then(() => rotationButtonRef.current.click());
     };
 
-    const countInvestment = diffBallNumber / getBallNumberLent(storeName);
+    let countInvestment = diffBallNumber / getBallNumberLent(storeName);
     // 丁度いい回転数を自動入力するために算出
-    const diffRotationNumber = Number(rotationNumberAutoRotation) - last(rotations).rotationNumber;
-    // 厳密にやらずに、小数点は無視します。
-    const rotationNumberPerInvestment = Math.floor(diffRotationNumber / countInvestment);
+    let diffRotationNumber = Number(rotationNumberAutoRotation) - last(rotations).rotationNumber;
     // 投資回数が整数でない場合は、考えないことにしています。
     if (!Number.isInteger(countInvestment)) {
-      alert("投資回数が整数ではありません。");
-      return;
+      if (!window.confirm("投資回数が整数ではありません。\n半端を除いて計算してもいいですか？")) return;
+      // 回転数の小数部分
+      const countInvestmentDecimal = countInvestment - parseInt(String(countInvestment));
+      // 投資回数を整数に修正
+      countInvestment -= countInvestmentDecimal;
+      // 余分な回転数を総回転数から引く
+      const rotationNumberExtra = Math.round(diffRotationNumber * countInvestmentDecimal);
+      diffRotationNumber -= rotationNumberExtra;
     }
+    // 一回の投資ごとの回転数。ユーザへの確認に用います。厳密にやらずに、小数点は無視します。
+    const rotationNumberPerInvestment = Math.floor(diffRotationNumber / countInvestment);
+
     // 自動回転の実施を確認します。
     if (!window.confirm(`自動回転してもいいですか？\n投資回数：${countInvestment}回\n平均回転数：${rotationNumberPerInvestment}`)) return;
     // 投資回数分、回転数を自動入力していきます。
