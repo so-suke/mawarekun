@@ -17,7 +17,7 @@ import {
   ERROR_MSG,
 } from "./constants";
 // 便利系関数インポート
-import { last } from "./utils";
+import { last, sleep } from "./utils";
 // 各コンポーネントをインポート
 import { ContinueStartButton } from "./components/ContinueStartButton";
 import { ResetStartButton } from "./components/ResetStartButton";
@@ -41,6 +41,8 @@ function App() {
   const [storeName, setStoreName] = useState("");
   const [machineName, setMachineName] = useState("");
   const [ballNumberConfirm, setBallNumberConfirm] = useState("");
+  const [ballNumberAutoRotation, setBallNumberAutoRotation] = useState("");
+  const [rotationNumberAutoRotation, setRotationNumberAutoRotation] = useState("");
   const [remarks, setRemarks] = useState("");
   const [exchangeRate, setExchangeRate] = useState<string>("");
   const [isCorrectBallNumberConfirm, setIsCorrectBallNumberConfirm] = useState(true);
@@ -48,6 +50,7 @@ function App() {
   // useRef定義
   const rotationListRef = useRef<HTMLDivElement>(null);
   const selectStoreRef = useRef<HTMLSelectElement>(document.createElement("select"));
+  const rotationButtonRef = useRef<HTMLButtonElement>(document.createElement("button"));
 
   const setItemLocalStorage = useCallback(
     (keyName: string, setted: string) => {
@@ -147,6 +150,18 @@ function App() {
   function changeBallNumberConfirm(event: React.ChangeEvent<HTMLInputElement>) {
     const ballNumberConfirm = event.target.value;
     setBallNumberConfirm(ballNumberConfirm);
+  }
+
+  // 自動回転に使用する玉数
+  function changeBallNumberAutoRotation(event: React.ChangeEvent<HTMLInputElement>) {
+    const ballNumberAutoRotation = event.target.value;
+    setBallNumberAutoRotation(ballNumberAutoRotation);
+  }
+
+  // 自動回転に使用する回転数
+  function changeRotationNumberAutoRotation(event: React.ChangeEvent<HTMLInputElement>) {
+    const rotationNumberAutoRotation = event.target.value;
+    setRotationNumberAutoRotation(rotationNumberAutoRotation);
   }
 
   function changeRotationNumberInputed(event: React.ChangeEvent<HTMLInputElement>) {
@@ -312,6 +327,45 @@ function App() {
     return Number(before + after);
   }
 
+  // 自動回転
+  async function autoRotation() {
+    if (ballNumberAutoRotation === "" || rotationNumberAutoRotation === "") {
+      alert("玉数または回転数を指定しましょう");
+      return;
+    }
+
+    // 玉数の差から投資回数を算出
+    const diffBallNumber = Number(ballNumberConfirm) - Number(ballNumberAutoRotation);
+    if (diffBallNumber < 0) {
+      alert("自動回転の玉数は、確認用玉数より大きい値を指定しましょう。");
+      return;
+    }
+
+    // 回転ボタンを非同期でクリックするために作成。
+    const clickRotation = () => {
+      return sleep(1).then(() => rotationButtonRef.current.click());
+    };
+
+    const countInvestment = diffBallNumber / getBallNumberLent(storeName);
+    // 丁度いい回転数を自動入力するために算出
+    const diffRotationNumber = Number(rotationNumberAutoRotation) - last(rotations).rotationNumber;
+    // 厳密にやらずに、小数点は無視します。
+    const rotationNumberPerInvestment = Math.floor(diffRotationNumber / countInvestment);
+    // 投資回数が整数でない場合は、考えないことにしています。
+    if (!Number.isInteger(countInvestment)) {
+      alert("投資回数が整数ではありません。");
+      return;
+    }
+    // 自動回転の実施を確認します。
+    if (!window.confirm(`自動回転してもいいですか？\n投資回数：${countInvestment}回\n平均回転数：${rotationNumberPerInvestment}`)) return;
+    // 投資回数分、回転数を自動入力していきます。
+    for (let index = 0; index < countInvestment; index++) {
+      const rotationNumber = Number(rotationNumberAutoRotation) - rotationNumberPerInvestment * (countInvestment - 1 - index);
+      setRotationNumberInputed(String(rotationNumber));
+      await clickRotation();
+    }
+  }
+
   // 通常回転（回転ボタン押下時の処理）
   function rotation() {
     try {
@@ -398,7 +452,7 @@ function App() {
               </Button>
               <Button variant="primary" className="col-4"></Button>
 
-              <Button variant="primary" className="col-4 py-3" onClick={() => rotation()}>
+              <Button variant="primary" className="col-4 py-3" ref={rotationButtonRef} onClick={() => rotation()}>
                 回転
               </Button>
 
@@ -429,6 +483,30 @@ function App() {
                 <FormControl value={ballNumberConfirm} data-testid="ball-number-confirm" onChange={changeBallNumberConfirm} type="number" />
               </InputGroup>
             </Row>
+            <Row>
+              <InputGroup size="sm">
+                <FormControl
+                  value={ballNumberAutoRotation}
+                  data-testid="ball-number-auto-rotation"
+                  onChange={changeBallNumberAutoRotation}
+                  type="number"
+                  placeholder="玉数"
+                />
+                <FormControl
+                  value={rotationNumberAutoRotation}
+                  data-testid="ball-number-auto-rotation"
+                  onChange={changeRotationNumberAutoRotation}
+                  type="number"
+                  placeholder="回転数"
+                />
+                <InputGroup.Append>
+                  <Button variant="outline-primary" onClick={() => autoRotation()}>
+                    自回
+                  </Button>
+                </InputGroup.Append>
+              </InputGroup>
+            </Row>
+
             <Row>
               <InputGroup size="sm">
                 <InputGroup.Prepend>
