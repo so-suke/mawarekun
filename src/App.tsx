@@ -66,12 +66,6 @@ function App() {
     [pageIndex]
   );
 
-  // test
-  useEffect(() => {
-    setBallNumberAutoRotation("2200");
-    setRotationNumberAutoRotation("102");
-  }, []);
-
   // 初回描画時に実行
   useEffect(() => {
     // ローカルストレージから各値を取得。
