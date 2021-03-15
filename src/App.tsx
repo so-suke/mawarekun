@@ -454,7 +454,7 @@ function App() {
 
             <Row className="mb-2">
               <NumberButtons setRotationNumberInputed={setRotationNumberInputed} rotationNumberInputed={rotationNumberInputed} />
-              <Button variant="primary" className="col-4" onClick={() => clearRotationNumberInputed()}>
+              <Button variant="primary" className={`col-4 ${styles.font_button}`} onClick={() => clearRotationNumberInputed()}>
                 C
               </Button>
               <Button variant="primary" className="col-4"></Button>
@@ -522,24 +522,7 @@ function App() {
                 <FormControl value={border} data-testid="border" onChange={changeBorder} type="number" />
               </InputGroup>
             </Row>
-            <Row>
-              <InputGroup size="sm">
-                <InputGroup.Prepend>
-                  <InputGroup.Text>店名</InputGroup.Text>
-                </InputGroup.Prepend>
-                <Form.Control as="select" value={storeName} onChange={changeStoreNamesSelect} ref={selectStoreRef}>
-                  <StoreNames storeNames={STORE_NAMES} />
-                </Form.Control>
-              </InputGroup>
-            </Row>
-            <Row>
-              <InputGroup size="sm">
-                <InputGroup.Prepend>
-                  <InputGroup.Text>機種名</InputGroup.Text>
-                </InputGroup.Prepend>
-                <FormControl value={machineName} onChange={changeMachineName} />
-              </InputGroup>
-            </Row>
+
             <Row>
               <InputGroup size="sm">
                 <InputGroup.Prepend>
@@ -548,10 +531,7 @@ function App() {
                 <Form.Control as="textarea" rows={2} value={remarks} onChange={changeRemarks} />
               </InputGroup>
             </Row>
-            <Row>
-              <div className="mr-2">交換率:</div>
-              <div>{exchangeRate}</div>
-            </Row>
+
             <Row>
               <Button className="mt-5" variant="primary" onClick={() => writeWorkResultAndDeleteAllRotation()}>
                 表書込＆全削
@@ -568,6 +548,28 @@ function App() {
             <ListGroup className="rotationList" ref={rotationListRef}>
               <Rotations rotations={rotations} />
             </ListGroup>
+
+            <div className={`${styles.mt_adjust_against_left}`}>
+              <InputGroup size="sm">
+                <InputGroup.Prepend>
+                  <InputGroup.Text>店名</InputGroup.Text>
+                </InputGroup.Prepend>
+                <Form.Control as="select" value={storeName} onChange={changeStoreNamesSelect} ref={selectStoreRef}>
+                  <StoreNames storeNames={STORE_NAMES} />
+                </Form.Control>
+              </InputGroup>
+            </div>
+            <div>
+              <InputGroup size="sm">
+                <InputGroup.Prepend>
+                  <InputGroup.Text>機種名</InputGroup.Text>
+                </InputGroup.Prepend>
+                <FormControl value={machineName} onChange={changeMachineName} />
+              </InputGroup>
+            </div>
+            <div>
+              <div className="mr-2">交換率:{exchangeRate}</div>
+            </div>
           </Col>
         </Row>
       </Container>

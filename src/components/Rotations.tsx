@@ -15,7 +15,7 @@ export function Rotations(props: { rotations: TypeRotation[] }) {
         } else if (rotation.type === ROTATION_MODE.normal) {
           content = `${rotation.rotationNumber} ${rotation.rotationRateMostRecent} ${rotation.rotationRate}`;
         }
-        return <ListGroup.Item key={index}>{content}</ListGroup.Item>;
+        return <ListGroup.Item key={index} className="py-1">{content}</ListGroup.Item>;
       })}
     </>
   );
