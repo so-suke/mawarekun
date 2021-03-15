@@ -1,23 +1,23 @@
 {
   "files": {
-    "main.css": "/mawarekun/static/css/main.baa80686.chunk.css",
-    "main.js": "/mawarekun/static/js/main.706ab924.chunk.js",
-    "main.js.map": "/mawarekun/static/js/main.706ab924.chunk.js.map",
+    "main.css": "/mawarekun/static/css/main.1404b292.chunk.css",
+    "main.js": "/mawarekun/static/js/main.7c3fa29a.chunk.js",
+    "main.js.map": "/mawarekun/static/js/main.7c3fa29a.chunk.js.map",
     "runtime-main.js": "/mawarekun/static/js/runtime-main.2692dd98.js",
     "runtime-main.js.map": "/mawarekun/static/js/runtime-main.2692dd98.js.map",
     "static/css/2.150d169a.chunk.css": "/mawarekun/static/css/2.150d169a.chunk.css",
-    "static/js/2.99c76200.chunk.js": "/mawarekun/static/js/2.99c76200.chunk.js",
-    "static/js/2.99c76200.chunk.js.map": "/mawarekun/static/js/2.99c76200.chunk.js.map",
+    "static/js/2.2ea52783.chunk.js": "/mawarekun/static/js/2.2ea52783.chunk.js",
+    "static/js/2.2ea52783.chunk.js.map": "/mawarekun/static/js/2.2ea52783.chunk.js.map",
     "index.html": "/mawarekun/index.html",
     "static/css/2.150d169a.chunk.css.map": "/mawarekun/static/css/2.150d169a.chunk.css.map",
-    "static/css/main.baa80686.chunk.css.map": "/mawarekun/static/css/main.baa80686.chunk.css.map",
-    "static/js/2.99c76200.chunk.js.LICENSE.txt": "/mawarekun/static/js/2.99c76200.chunk.js.LICENSE.txt"
+    "static/css/main.1404b292.chunk.css.map": "/mawarekun/static/css/main.1404b292.chunk.css.map",
+    "static/js/2.2ea52783.chunk.js.LICENSE.txt": "/mawarekun/static/js/2.2ea52783.chunk.js.LICENSE.txt"
   },
   "entrypoints": [
     "static/js/runtime-main.2692dd98.js",
     "static/css/2.150d169a.chunk.css",
-    "static/js/2.99c76200.chunk.js",
-    "static/css/main.baa80686.chunk.css",
-    "static/js/main.706ab924.chunk.js"
+    "static/js/2.2ea52783.chunk.js",
+    "static/css/main.1404b292.chunk.css",
+    "static/js/main.7c3fa29a.chunk.js"
   ]
 }
