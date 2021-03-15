@@ -431,11 +431,10 @@ function App() {
             <p className="mb-0">
               <span>{pageIndex}ページ目</span>
             </p>
-            
+
             <p className="mb-0">
               <span>{rotationUnitPrice}</span> * <span>{rotationNumberTotal}</span> = <span data-testid="work-amount">{getWorkAmount()}</span>
             </p>
-
 
             <Row className="justify-content-between">
               <Button className="mb-1" variant="primary" onClick={() => deleteOneRotation()}>
@@ -486,7 +485,16 @@ function App() {
                 setRotations={setRotations}
               />
             </Row>
+          </Col>
+          <Col>
+            <ListGroup className="rotationList" ref={rotationListRef}>
+              <Rotations rotations={rotations} />
+            </ListGroup>
+          </Col>
+        </Row>
 
+        <Row>
+          <Col>
             <Row>
               <InputGroup size="sm">
                 <InputGroup.Prepend>
@@ -549,12 +557,9 @@ function App() {
               </Button>
             </Row>
           </Col>
-          <Col>
-            <ListGroup className="rotationList" ref={rotationListRef}>
-              <Rotations rotations={rotations} />
-            </ListGroup>
 
-            <div className={`${styles.mt_adjust_against_left}`}>
+          <Col>
+            <div>
               <InputGroup size="sm">
                 <InputGroup.Prepend>
                   <InputGroup.Text>店名</InputGroup.Text>
