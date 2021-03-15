@@ -429,14 +429,19 @@ function App() {
         <Row>
           <Col>
             <p className="mb-0">
+              <span>{pageIndex}ページ目</span>
+            </p>
+            
+            <p className="mb-0">
               <span>{rotationUnitPrice}</span> * <span>{rotationNumberTotal}</span> = <span data-testid="work-amount">{getWorkAmount()}</span>
             </p>
+
 
             <Row className="justify-content-between">
               <Button className="mb-1" variant="primary" onClick={() => deleteOneRotation()}>
                 1行削除
               </Button>
-              <Button className="mb-1" variant="primary" onClick={() => toPrevPage()}>
+              <Button className={`mb-1 ${pageIndex === 0 ? "d-none" : ""}`} variant="primary" onClick={() => toPrevPage()}>
                 前
               </Button>
               <Button className="mb-1" variant="primary" onClick={() => toNextPage()}>
