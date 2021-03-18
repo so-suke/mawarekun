@@ -46,6 +46,11 @@ function App() {
   const [remarks, setRemarks] = useState("");
   const [exchangeRate, setExchangeRate] = useState<string>("");
   const [isCorrectBallNumberConfirm, setIsCorrectBallNumberConfirm] = useState(true);
+  const [roundBase, setRoundBase] = useState(0);
+  const [roundRecord, setRoundRecord] = useState("4.10.6.4.10.6");
+  const [wonBallNumberRecord, setWonBallNumberRecord] = useState("1000.1000");
+  const [roundTotal, setRoundTotal] = useState(0);
+  const [wonBallNumberTotal, setWonBallNumberTotal] = useState(0);
 
   // useRef定義
   const rotationListRef = useRef<HTMLDivElement>(null);
@@ -66,9 +71,15 @@ function App() {
     [pageIndex]
   );
 
+  useEffect(() => {
+    const pageIndexLocal: number = Number(localStorage.getItem("pageIndex") || "0");
+    setPageIndex(pageIndexLocal);
+  }, []);
+
   // 初回描画時に実行
   useEffect(() => {
     // ローカルストレージから各値を取得。
+
     const investmentCntLocal: string = getItemLocalStorage("investmentCnt", "0");
     const rotationsParsed: TypeRotation[] = JSON.parse(getItemLocalStorage("rotations", "[]"));
     const storeNameLocal: string = getItemLocalStorage("storeName", "");
@@ -76,17 +87,49 @@ function App() {
     const ballNumberConfirmLocal: string = getItemLocalStorage("ballNumberConfirm", "");
     const borderLocal: string = getItemLocalStorage("border", "18.0");
     const remarksLocal: string = getItemLocalStorage("remarks", "");
+    const roundBaseLocal: number = Number(getItemLocalStorage("roundBase", ""));
+    const roundRecordLocal: string = getItemLocalStorage("roundRecord", "");
+    const wonBallNumberRecordLocal: string = getItemLocalStorage("wonBallNumberRecord", "");
 
     setInvestmentCnt(Number(investmentCntLocal));
-    setStoreName(storeNameLocal);
     setRotations(rotationsParsed);
+    setRotationRate(calcRotationRate(rotationsParsed));
+    setRotationNumberTotal(calcRotationNumberTotal(rotationsParsed));
+    setStoreName(storeNameLocal);
     setMachineName(machineNameLocal);
     setBallNumberConfirm(ballNumberConfirmLocal);
     setBorder(borderLocal);
     setRemarks(remarksLocal);
-    setRotationRate(calcRotationRate(rotationsParsed));
-    setRotationNumberTotal(calcRotationNumberTotal(rotationsParsed));
+    setRoundBase(roundBaseLocal);
+    setRoundRecord(roundRecordLocal);
+    setWonBallNumberRecord(wonBallNumberRecordLocal);
   }, [getItemLocalStorage]);
+
+  const sumRoundBaseRecords = (record: string) => {
+    const regexSplit = /[\n.,]/;
+    const records = record.split(regexSplit).map((record) => Number(record));
+    const recordsTotal = records.reduce((prev, curr) => {
+      return prev + curr;
+    }, 0);
+
+    return recordsTotal;
+  };
+
+  useEffect(() => {
+    const recordsTotal = sumRoundBaseRecords(roundRecord);
+    setRoundTotal(recordsTotal);
+  }, [roundRecord]);
+
+  useEffect(() => {
+    const recordsTotal = sumRoundBaseRecords(wonBallNumberRecord);
+    setWonBallNumberTotal(recordsTotal);
+  }, [wonBallNumberRecord]);
+
+  useEffect(() => {
+    const roundBase = Number((wonBallNumberTotal / roundTotal).toFixed(1));
+    setRoundBase(roundBase);
+    setItemLocalStorage("roundBase", "" + roundBase);
+  }, [roundTotal, wonBallNumberTotal, setItemLocalStorage]);
 
   useEffect(() => {
     (rotationListRef as any).current.scrollTop = (rotationListRef as any).current.scrollHeight;
@@ -146,6 +189,20 @@ function App() {
     setRemarks(remarksInputed);
   }
 
+  // ラウンド記録の変更
+  function changeRoundRecord(event: React.ChangeEvent<HTMLInputElement>) {
+    const input = event.target.value;
+    setItemLocalStorage("roundRecord", input);
+    setRoundRecord(input);
+  }
+
+  // 獲得玉数記録の変更
+  function changeWonBallNumberRecord(event: React.ChangeEvent<HTMLInputElement>) {
+    const input = event.target.value;
+    setItemLocalStorage("wonBallNumberRecord", input);
+    setWonBallNumberRecord(input);
+  }
+
   // 回転数入力ミス防止用玉数の変更
   function changeBallNumberConfirm(event: React.ChangeEvent<HTMLInputElement>) {
     const ballNumberConfirm = event.target.value;
@@ -197,10 +254,12 @@ function App() {
 
   // 前のページへ移動
   function toPrevPage() {
+    localStorage.setItem("pageIndex", "" + (pageIndex - 1));
     setPageIndex(pageIndex - 1);
   }
   // 次のページへ移動
   function toNextPage() {
+    localStorage.setItem("pageIndex", "" + (pageIndex + 1));
     setPageIndex(pageIndex + 1);
   }
 
@@ -258,6 +317,7 @@ function App() {
     return last(rotations).rotationRate;
   }
 
+  // 回転配列の全行削除
   function deleteAllRotation() {
     if (window.confirm("全行削除してもいいですか？")) {
       setRotations([]);
@@ -267,6 +327,8 @@ function App() {
       setBallNumberConfirm("");
       setMachineName("");
       setRemarks("");
+      setRoundRecord("");
+      setWonBallNumberRecord("");
     }
   }
 
@@ -285,6 +347,7 @@ function App() {
     params.append("rotationRate", `${rotationRate}`);
     params.append("rotationUnitPrice", `${rotationUnitPrice}`);
     params.append("rotationNumberTotal", `${rotationNumberTotal}`);
+    params.append("roundBase", `${roundBase}`);
     params.append("workAmount", `${getWorkAmount()}`);
     params.append("machineName", `${machineName}`);
     params.append("storeName", `${storeName}`);
@@ -490,6 +553,25 @@ function App() {
             <ListGroup className="rotationList" ref={rotationListRef}>
               <Rotations rotations={rotations} />
             </ListGroup>
+
+            <div className="mt-2">
+              <span className="mb-0">獲得玉数</span>
+              <InputGroup>
+                <FormControl
+                  as="textarea"
+                  rows={2}
+                  placeholder="獲得玉数"
+                  inputMode="numeric"
+                  value={wonBallNumberRecord}
+                  onChange={changeWonBallNumberRecord}
+                />
+              </InputGroup>
+              <span className="mb-0">ラウンド数</span>
+              <InputGroup>
+                <FormControl as="textarea" rows={2} placeholder="ラウンド" inputMode="numeric" value={roundRecord} onChange={changeRoundRecord} />
+              </InputGroup>
+              <p className="mb-0">rb: {roundBase}</p>
+            </div>
           </Col>
         </Row>
 
