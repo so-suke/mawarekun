@@ -37,4 +37,5 @@ export const ERROR_MSG: TypeErrorMsg = {
   rotaionNumberEmpty: "回転数を入力しましょう",
   selectStore: "店名を選択して下さい。",
   notExpectedStoreName: "エラー可能性。存在しない店名が渡されました。",
+  bigHitBallNumberBeforeBigThanAfter: "エラー\n大当たり玉数に関して\n大当前より大当後の方が大きくなるようにしましょう"
 };

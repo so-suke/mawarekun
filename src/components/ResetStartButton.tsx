@@ -11,6 +11,7 @@ export function ResetStartButton(props: {
   isResetStarted: Function;
   clearRotationNumberInputed: Function;
   setRotations: Function;
+  setRemarks: Function;
 }) {
   const resetStart = () => {
     try {
@@ -35,7 +36,14 @@ export function ResetStartButton(props: {
 
       props.clearRotationNumberInputed();
 
-      localStorage.setItem("startTime", format(new Date(), "HH:mm"));
+      // 備考に稼働開始時間を書込
+      const now = new Date();
+      const startTime = format(now, "HH:mm");
+      props.setRemarks((remarksNow: string) => {
+        const delimiter = remarksNow === "" ? "" : "\n";
+        props.setRemarks(`${remarksNow}${delimiter}開始時間：${startTime}`);
+      });
+      localStorage.setItem("startTime", startTime);
     } catch (error) {
       alert(error);
     }

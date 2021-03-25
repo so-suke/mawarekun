@@ -46,9 +46,11 @@ function App() {
   const [remarks, setRemarks] = useState("");
   const [exchangeRate, setExchangeRate] = useState<string>("");
   const [isCorrectBallNumberConfirm, setIsCorrectBallNumberConfirm] = useState(true);
+  const [ballNumberBigHitBefore, setBallNumberBigHitBefore] = useState("");
+  const [ballNumberBigHitAfter, setBallNumberBigHitAfter] = useState("");
   const [roundBase, setRoundBase] = useState(0);
-  const [roundRecord, setRoundRecord] = useState("4.10.6.4.10.6");
-  const [wonBallNumberRecord, setWonBallNumberRecord] = useState("1000.1000");
+  const [roundRecord, setRoundRecord] = useState("");
+  const [wonBallNumberRecord, setWonBallNumberRecord] = useState("");
   const [roundTotal, setRoundTotal] = useState(0);
   const [wonBallNumberTotal, setWonBallNumberTotal] = useState(0);
 
@@ -71,15 +73,14 @@ function App() {
     [pageIndex]
   );
 
+  // 初回描画時に実行
   useEffect(() => {
     const pageIndexLocal: number = Number(localStorage.getItem("pageIndex") || "0");
     setPageIndex(pageIndexLocal);
   }, []);
 
-  // 初回描画時に実行
   useEffect(() => {
     // ローカルストレージから各値を取得。
-
     const investmentCntLocal: string = getItemLocalStorage("investmentCnt", "0");
     const rotationsParsed: TypeRotation[] = JSON.parse(getItemLocalStorage("rotations", "[]"));
     const storeNameLocal: string = getItemLocalStorage("storeName", "");
@@ -87,6 +88,8 @@ function App() {
     const ballNumberConfirmLocal: string = getItemLocalStorage("ballNumberConfirm", "");
     const borderLocal: string = getItemLocalStorage("border", "18.0");
     const remarksLocal: string = getItemLocalStorage("remarks", "");
+    const ballNumberBigHitBeforeLocal: string = getItemLocalStorage("ballNumberBigHitBefore", "0");
+    const ballNumberBigHitAfterLocal: string = getItemLocalStorage("ballNumberBigHitAfter", "0");
     const roundBaseLocal: number = Number(getItemLocalStorage("roundBase", ""));
     const roundRecordLocal: string = getItemLocalStorage("roundRecord", "");
     const wonBallNumberRecordLocal: string = getItemLocalStorage("wonBallNumberRecord", "");
@@ -100,6 +103,8 @@ function App() {
     setBallNumberConfirm(ballNumberConfirmLocal);
     setBorder(borderLocal);
     setRemarks(remarksLocal);
+    setBallNumberBigHitBefore(ballNumberBigHitBeforeLocal);
+    setBallNumberBigHitAfter(ballNumberBigHitAfterLocal);
     setRoundBase(roundBaseLocal);
     setRoundRecord(roundRecordLocal);
     setWonBallNumberRecord(wonBallNumberRecordLocal);
@@ -153,6 +158,10 @@ function App() {
   }, [remarks, setItemLocalStorage]);
 
   useEffect(() => {
+    setItemLocalStorage("machineName", machineName);
+  }, [machineName, setItemLocalStorage]);
+
+  useEffect(() => {
     // 選択肢の店名が変更されたら、対応した交換率へ変更する。
     const storeExchangeRate = STORE_NAMES_EXCHANGE_RATES_MAP.get(storeName);
     setExchangeRate(String(storeExchangeRate));
@@ -180,13 +189,26 @@ function App() {
   function changeMachineName(event: React.ChangeEvent<HTMLInputElement>) {
     const machineName = event.target.value;
     setMachineName(machineName);
-    setItemLocalStorage("machineName", machineName);
   }
 
   // 備考の変更
   function changeRemarks(event: React.ChangeEvent<HTMLInputElement>) {
     const remarksInputed = event.target.value;
     setRemarks(remarksInputed);
+  }
+
+  // 大当前玉数の変更
+  function changeBallNumberBigHitBefore(event: React.ChangeEvent<HTMLInputElement>) {
+    const input = event.target.value;
+    setItemLocalStorage("ballNumberBigHitBefore", input);
+    setBallNumberBigHitBefore(input);
+  }
+
+  // 大当後玉数の変更
+  function changeBallNumberBigHitAfter(event: React.ChangeEvent<HTMLInputElement>) {
+    const input = event.target.value;
+    setItemLocalStorage("ballNumberBigHitAfter", input);
+    setBallNumberBigHitAfter(input);
   }
 
   // ラウンド記録の変更
@@ -230,12 +252,34 @@ function App() {
     return rotations.length > 0 && rotations[0].type === ROTATION_MODE.resetStart;
   }
 
+  // 今選択している店舗が大当たり出玉計数機能を付けているかどうか
+  function hasCountFunctionBigHitBallNumber() {
+    return storeName === "NtNakano";
+  }
+
   function clearRotationNumberInputed() {
     setRotationNumberInputed("");
   }
 
   function getWorkAmount() {
     return (rotationUnitPrice * rotationNumberTotal).toFixed(0);
+  }
+
+  // 獲得玉数の自動計算
+  function autoCalculateWonBallNumber() {
+    try {
+      if (window.confirm("獲得玉数の自動計算、入力を行います")) {
+        // 大当たり後 ー 大当たり前　で　獲得玉数を計算
+        const wonBallNumberCalculated = Number(ballNumberBigHitAfter) - Number(ballNumberBigHitBefore);
+        // 大当たり前の玉数が大当たり後より大きければエラー
+        if (wonBallNumberCalculated < 0) {
+          throw ERROR_MSG.bigHitBallNumberBeforeBigThanAfter;
+        }
+        setWonBallNumberRecord(`${wonBallNumberRecord}\n${wonBallNumberCalculated},`);
+      }
+    } catch (error) {
+      alert(error);
+    }
   }
 
   // 一回の貸出ボタン玉数
@@ -546,6 +590,7 @@ function App() {
                 isResetStarted={isResetStarted}
                 clearRotationNumberInputed={clearRotationNumberInputed}
                 setRotations={setRotations}
+                setRemarks={setRemarks}
               />
             </Row>
           </Col>
@@ -555,6 +600,23 @@ function App() {
             </ListGroup>
 
             <div className="mt-2">
+              <div className={`mb-2 ${hasCountFunctionBigHitBallNumber() ? "" : "d-none"}`}>
+                <InputGroup size="sm">
+                  <InputGroup.Prepend>
+                    <InputGroup.Text>大当前玉数</InputGroup.Text>
+                  </InputGroup.Prepend>
+                  <FormControl type="number" value={ballNumberBigHitBefore} onChange={changeBallNumberBigHitBefore} />
+                </InputGroup>
+                <InputGroup size="sm">
+                  <InputGroup.Prepend>
+                    <InputGroup.Text>大当後玉数</InputGroup.Text>
+                  </InputGroup.Prepend>
+                  <FormControl type="number" value={ballNumberBigHitAfter} onChange={changeBallNumberBigHitAfter} />
+                </InputGroup>
+                <Button variant="primary" size="sm" onClick={() => autoCalculateWonBallNumber()}>
+                  自動計算
+                </Button>
+              </div>
               <span className="mb-0">獲得玉数</span>
               <InputGroup>
                 <FormControl
