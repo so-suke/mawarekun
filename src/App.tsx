@@ -62,6 +62,7 @@ function App() {
   const [wonBallNumberRecord, setWonBallNumberRecord] = useState("");
   const [roundTotal, setRoundTotal] = useState(0);
   const [wonBallNumberTotal, setWonBallNumberTotal] = useState(0);
+  const [spreadSheetId, setSpreadSheetId] = useState("");
 
   // useRef定義
   const rotationListRef = useRef<HTMLDivElement>(null);
@@ -93,6 +94,7 @@ function App() {
 
   useEffect(() => {
     // ローカルストレージから各値を取得。
+    const spreadSheetIdLocal: string = localStorage.getItem("spreadSheetId") || "";
     const sizeTenKeyLocal: string = localStorage.getItem("sizeTenKey") || "10";
     const investmentCntLocal: string = getItemLocalStoragePageIndex("investmentCnt", "0");
     const rotationsParsed: TypeRotation[] = JSON.parse(getItemLocalStoragePageIndex("rotations", "[]"));
@@ -107,6 +109,7 @@ function App() {
     const roundRecordLocal: string = getItemLocalStoragePageIndex("roundRecord", "");
     const wonBallNumberRecordLocal: string = getItemLocalStoragePageIndex("wonBallNumberRecord", "");
 
+    setSpreadSheetId(spreadSheetIdLocal);
     setSizeTenKey(sizeTenKeyLocal);
     setInvestmentCnt(Number(investmentCntLocal));
     setRotations(rotationsParsed);
@@ -133,6 +136,10 @@ function App() {
 
     return recordsTotal;
   };
+
+  useEffect(() => {
+    localStorage.setItem("spreadSheetId", spreadSheetId);
+  }, [spreadSheetId]);
 
   useEffect(() => {
     localStorage.setItem("sizeTenKey", sizeTenKey);
@@ -197,6 +204,10 @@ function App() {
   }, [border, rotationRate]);
 
   // ■change系
+  function changeSpreadSheetId(event: React.ChangeEvent<HTMLInputElement>) {
+    setSpreadSheetId(event.target.value);
+  }
+
   function changeSizeButton(event: React.ChangeEvent<HTMLInputElement>) {
     setSizeTenKey(event.target.value);
   }
@@ -413,7 +424,13 @@ function App() {
     const timeStart = localStorage.getItem("startTime");
     const timeEnd = format(now, "HH:mm");
 
+    if (spreadSheetId === "") {
+      alert("ssidを入力して下さい。");
+      return;
+    }
+
     const params = new URLSearchParams();
+    params.append("spreadsheetId", `${spreadSheetId}`);
     params.append("date", `${date}`);
     params.append("timeStart", `${timeStart}`);
     params.append("timeEnd", `${timeEnd}`);
@@ -763,6 +780,13 @@ function App() {
                 <InputGroup.Text>ボタン大きさ</InputGroup.Text>
               </InputGroup.Prepend>
               <FormControl value={sizeTenKey} min="1" max="30" onChange={changeSizeButton} type="number" />
+            </InputGroup>
+
+            <InputGroup size="sm">
+              <InputGroup.Prepend>
+                <InputGroup.Text>ssid</InputGroup.Text>
+              </InputGroup.Prepend>
+              <FormControl value={spreadSheetId} onChange={changeSpreadSheetId} />
             </InputGroup>
           </Col>
         </Row>
