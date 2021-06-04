@@ -63,6 +63,7 @@ function App() {
   const [roundTotal, setRoundTotal] = useState(0);
   const [wonBallNumberTotal, setWonBallNumberTotal] = useState(0);
   const [spreadSheetId, setSpreadSheetId] = useState("");
+  const [machineNumberInStore, setMachineNumberInStore] = useState("");
 
   // useRef定義
   const rotationListRef = useRef<HTMLDivElement>(null);
@@ -94,6 +95,7 @@ function App() {
 
   useEffect(() => {
     // ローカルストレージから各値を取得。
+    const machineNumberInStoreLocal: string = localStorage.getItem("machineNumberInStore") || "0";
     const spreadSheetIdLocal: string = localStorage.getItem("spreadSheetId") || "";
     const sizeTenKeyLocal: string = localStorage.getItem("sizeTenKey") || "10";
     const investmentCntLocal: string = getItemLocalStoragePageIndex("investmentCnt", "0");
@@ -109,6 +111,7 @@ function App() {
     const roundRecordLocal: string = getItemLocalStoragePageIndex("roundRecord", "");
     const wonBallNumberRecordLocal: string = getItemLocalStoragePageIndex("wonBallNumberRecord", "");
 
+    setMachineNumberInStore(machineNumberInStoreLocal);
     setSpreadSheetId(spreadSheetIdLocal);
     setSizeTenKey(sizeTenKeyLocal);
     setInvestmentCnt(Number(investmentCntLocal));
@@ -136,6 +139,10 @@ function App() {
 
     return recordsTotal;
   };
+
+  useEffect(() => {
+    localStorage.setItem("machineNumberInStore", machineNumberInStore);
+  }, [machineNumberInStore]);
 
   useEffect(() => {
     localStorage.setItem("spreadSheetId", spreadSheetId);
@@ -204,6 +211,10 @@ function App() {
   }, [border, rotationRate]);
 
   // ■change系
+  function changeMachineNumberInStore(event: React.ChangeEvent<HTMLInputElement>) {
+    setMachineNumberInStore(event.target.value);
+  }
+
   function changeSpreadSheetId(event: React.ChangeEvent<HTMLInputElement>) {
     setSpreadSheetId(event.target.value);
   }
@@ -398,7 +409,7 @@ function App() {
     return last(rotations).rotationRate;
   }
 
-  // 回転配列の全行削除
+  // 「回転配列の全行削除」と「初期化するべきデータの初期化」
   function deleteAllRotation() {
     if (window.confirm("全行削除してもいいですか？")) {
       setRotations([]);
@@ -410,6 +421,7 @@ function App() {
       setRemarks("");
       setRoundRecord("");
       setWonBallNumberRecord("");
+      setMachineNumberInStore("");
       if (hasCountFunctionBigHitBallNumber()) {
         setBallNumberBigHitBefore("");
         setBallNumberBigHitAfter("");
@@ -442,6 +454,7 @@ function App() {
     params.append("workAmount", `${getWorkAmount()}`);
     params.append("machineName", `${machineName}`);
     params.append("storeName", `${storeName}`);
+    params.append("machineNumberInStore", `${machineNumberInStore}`);
     params.append("remarks", `${remarks}`);
 
     axios
@@ -728,6 +741,15 @@ function App() {
                   <InputGroup.Text>ボーダー</InputGroup.Text>
                 </InputGroup.Prepend>
                 <FormControl value={border} data-testid="border" onChange={changeBorder} type="number" />
+              </InputGroup>
+            </Row>
+
+            <Row>
+              <InputGroup size="sm">
+                <InputGroup.Prepend>
+                  <InputGroup.Text>台番</InputGroup.Text>
+                </InputGroup.Prepend>
+                <FormControl value={machineNumberInStore} data-testid="machineNumberInStore" onChange={changeMachineNumberInStore} type="number" />
               </InputGroup>
             </Row>
 

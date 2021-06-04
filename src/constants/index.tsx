@@ -19,7 +19,7 @@ export const EXCHANGE_RATE_NORMAL: number = 4;
 // ワンプッシュ辺りの金額
 export const AMOUNT_ONE_PUSH = 500;
 // スプレッドシートREST_URL
-export const REST_URL_SPREADSHEET = "https://script.google.com/macros/s/AKfycbydAmOiNiksjhFoqxh1e_GUPQMuaJLCUJ0IssMpDjf_asz3gAdBQUjkS13GD9an40u0VQ/exec";
+export const REST_URL_SPREADSHEET = "https://script.google.com/macros/s/AKfycbxeKw7JURtSWjKhNWusNdDHO_nxwLSTVqbyjFo_0bOrZLV47gAtCxJEta32cIoXkt7dWg/exec";
 export const REPLENISHMENT_AMOUNT = 500;
 // 直近の回転率計算に用いる。
 export const REPLENISHMENT_AMOUNT_RATIO = 1000 / REPLENISHMENT_AMOUNT;
