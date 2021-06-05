@@ -298,17 +298,19 @@ function App() {
     return (rotationUnitPrice * rotationNumberTotal).toFixed(0);
   }
 
-  // 獲得玉数の自動計算
-  function autoCalculateWonBallNumber() {
+  // 獲得玉数の計算
+  function calculateWonBallNumber() {
     try {
-      if (window.confirm("獲得玉数の自動計算、入力を行います")) {
+      if (window.confirm("獲得玉数の計算、入力を行います")) {
         // 大当たり後 ー 大当たり前　で　獲得玉数を計算
         const wonBallNumberCalculated = Number(ballNumberBigHitAfter) - Number(ballNumberBigHitBefore);
         // 大当たり前の玉数が大当たり後より大きければエラー
         if (wonBallNumberCalculated < 0) {
           throw ERROR_MSG.bigHitBallNumberBeforeBigThanAfter;
         }
-        setWonBallNumberRecord(`${wonBallNumberRecord}\n${wonBallNumberCalculated},`);
+        // 改行するかどうか？初回書き込み時は改行しない。
+        const lineBreakIf = wonBallNumberRecord === "" ? "" : "\n";
+        setWonBallNumberRecord(`${wonBallNumberRecord}${lineBreakIf}${wonBallNumberCalculated},`);
       }
     } catch (error) {
       alert(error);
@@ -664,8 +666,8 @@ function App() {
                   </InputGroup.Prepend>
                   <FormControl type="number" value={ballNumberBigHitAfter} onChange={changeBallNumberBigHitAfter} />
                 </InputGroup>
-                <Button variant="primary" size="sm" onClick={() => autoCalculateWonBallNumber()}>
-                  自動計算
+                <Button variant="primary" size="sm" onClick={() => calculateWonBallNumber()}>
+                  獲得玉数計算
                 </Button>
               </div>
               <span className="mb-0">獲得玉数</span>
