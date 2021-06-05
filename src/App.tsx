@@ -70,6 +70,7 @@ function App() {
   const selectStoreRef = useRef<HTMLSelectElement>(document.createElement("select"));
   const rotationButtonRef = useRef<HTMLButtonElement>(document.createElement("button"));
 
+  // 各ページで固有のものにしたいデータを保存するために使用する関数。
   const setItemLocalStoragePageIndex = useCallback(
     (keyName: string, setted: string) => {
       localStorage.setItem(`${keyName}_${pageIndex}`, setted);
@@ -95,7 +96,7 @@ function App() {
 
   useEffect(() => {
     // ローカルストレージから各値を取得。
-    const machineNumberInStoreLocal: string = localStorage.getItem("machineNumberInStore") || "0";
+    const machineNumberInStoreLocal: string = getItemLocalStoragePageIndex("machineNumberInStore", "");
     const spreadSheetIdLocal: string = localStorage.getItem("spreadSheetId") || "";
     const sizeTenKeyLocal: string = localStorage.getItem("sizeTenKey") || "10";
     const investmentCntLocal: string = getItemLocalStoragePageIndex("investmentCnt", "0");
@@ -141,8 +142,8 @@ function App() {
   };
 
   useEffect(() => {
-    localStorage.setItem("machineNumberInStore", machineNumberInStore);
-  }, [machineNumberInStore]);
+    setItemLocalStoragePageIndex("machineNumberInStore", machineNumberInStore);
+  }, [machineNumberInStore, setItemLocalStoragePageIndex]);
 
   useEffect(() => {
     localStorage.setItem("spreadSheetId", spreadSheetId);
