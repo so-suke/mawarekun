@@ -154,10 +154,6 @@ function App() {
   }, [machineNumberInStore, setItemLocalStoragePageIndex]);
 
   useEffect(() => {
-    setItemLocalStorage("spreadSheetId", spreadSheetId);
-  }, [spreadSheetId]);
-
-  useEffect(() => {
     setItemLocalStorage("sizeTenKey", sizeTenKey);
   }, [sizeTenKey]);
 
@@ -226,6 +222,7 @@ function App() {
 
   function changeSpreadSheetId(event: React.ChangeEvent<HTMLInputElement>) {
     setSpreadSheetId(event.target.value);
+    setItemLocalStorage("spreadSheetId", spreadSheetId);
   }
 
   function changeSizeButton(event: React.ChangeEvent<HTMLInputElement>) {
