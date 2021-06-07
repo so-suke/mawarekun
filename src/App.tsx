@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Container, Row, Col, FormControl, Form, Button, ListGroup, InputGroup } from "react-bootstrap";
 import { format } from "date-fns";
@@ -17,87 +17,196 @@ import {
   ERROR_MSG,
 } from "./constants";
 // 便利系関数インポート
-import { last } from "./utils";
+import { last, sleep } from "./utils";
 // 各コンポーネントをインポート
 import { ContinueStartButton } from "./components/ContinueStartButton";
 import { ResetStartButton } from "./components/ResetStartButton";
 import { NumberButtons } from "./components/NumberButtons";
 import { Rotations } from "./components/Rotations";
 import { StoreNames } from "./components/StoreNames";
+import { useSwipeable } from "react-swipeable";
 // css modulesインポート
-import styles from './cssModules/App.module.css'; 
+import styles from "./cssModules/App.module.css";
 
 const axios = require("axios").default;
 
+const config = { delta: 100 };
+
 function App() {
+  const handlers = useSwipeable({
+    onSwipedLeft: (eventData) => toNextPage(),
+    onSwipedRight: (eventData) => toPrevPage(),
+    ...config,
+  });
   // useState定義
+  const [pageIndex, setPageIndex] = useState(0);
+  const [sizeTenKey, setSizeTenKey] = useState("12");
   const [rotationNumberInputed, setRotationNumberInputed] = useState<string>("");
   const [rotations, setRotations] = useState<TypeRotation[]>([]);
   const [rotationRate, setRotationRate] = useState(0);
   const [investmentCnt, setInvestmentCnt] = useState(0);
   const [rotationNumberTotal, setRotationNumberTotal] = useState(0);
-  const [border, setBorder] = useState<string>("18.0");
+  const [border, setBorder] = useState<string>("");
   const [storeName, setStoreName] = useState("");
   const [machineName, setMachineName] = useState("");
   const [ballNumberConfirm, setBallNumberConfirm] = useState("");
+  const [ballNumberAutoRotation, setBallNumberAutoRotation] = useState("");
+  const [rotationNumberAutoRotation, setRotationNumberAutoRotation] = useState("");
   const [remarks, setRemarks] = useState("");
   const [exchangeRate, setExchangeRate] = useState<string>("");
   const [isCorrectBallNumberConfirm, setIsCorrectBallNumberConfirm] = useState(true);
+  const [ballNumberBigHitBefore, setBallNumberBigHitBefore] = useState("");
+  const [ballNumberBigHitAfter, setBallNumberBigHitAfter] = useState("");
+  const [roundBase, setRoundBase] = useState(0);
+  const [roundRecord, setRoundRecord] = useState("");
+  const [wonBallNumberRecord, setWonBallNumberRecord] = useState("");
+  const [roundTotal, setRoundTotal] = useState(0);
+  const [wonBallNumberTotal, setWonBallNumberTotal] = useState(0);
+  const [spreadSheetId, setSpreadSheetId] = useState("");
+  const [machineNumberInStore, setMachineNumberInStore] = useState("");
 
   // useRef定義
   const rotationListRef = useRef<HTMLDivElement>(null);
   const selectStoreRef = useRef<HTMLSelectElement>(document.createElement("select"));
+  const rotationButtonRef = useRef<HTMLButtonElement>(document.createElement("button"));
+
+  // ローカルストレージ系関数
+  const setItemLocalStorage = (keyName: string, setValue: string) => {
+    localStorage.setItem(keyName, setValue);
+  };
+  const getItemLocalStorage = (keyName: string, getDefault: string) => {
+    return localStorage.getItem(keyName) || getDefault;
+  };
+
+  // 各ページで固有のものにしたいデータを保存するために使用する関数。
+  const setItemLocalStoragePageIndex = useCallback(
+    (keyName: string, setted: string) => {
+      localStorage.setItem(`${keyName}_${pageIndex}`, setted);
+    },
+    [pageIndex]
+  );
+  const getItemLocalStoragePageIndex = useCallback(
+    (keyName: string, init: string) => {
+      const result = localStorage.getItem(`${keyName}_${pageIndex}`) || init;
+      return result;
+    },
+    [pageIndex]
+  );
+  const getStyleSizeTenKey: Function = useCallback(() => {
+    return { paddingTop: `${sizeTenKey}px`, paddingBottom: `${sizeTenKey}px` };
+  }, [sizeTenKey]);
 
   // 初回描画時に実行
   useEffect(() => {
-    // ローカルストレージから各値を取得。
-    const investmentCntLocal: string = localStorage.getItem("investmentCnt") || "0";
-    const rotationsParsed: TypeRotation[] = JSON.parse(localStorage.getItem("rotations") || "[]");
-    const storeNameLocal: string = localStorage.getItem("storeName") || "";
-    const machineNameLocal: string = localStorage.getItem("machineName") || "";
-    const ballNumberConfirmLocal: string = localStorage.getItem("ballNumberConfirm") || "";
-    const borderLocal: string = localStorage.getItem("border") || "";
-    const remarksLocal: string = localStorage.getItem("remarks") || "";
+    const pageIndexLocal: number = Number(getItemLocalStorage("pageIndex", "0"));
+    setPageIndex(pageIndexLocal);
+  }, []);
 
+  useEffect(() => {
+    // ローカルストレージから各値を取得。
+    const machineNumberInStoreLocal: string = getItemLocalStoragePageIndex("machineNumberInStore", "");
+    const spreadSheetIdLocal: string = getItemLocalStorage("spreadSheetId", "");
+    const sizeTenKeyLocal: string = getItemLocalStorage("sizeTenKey", "10");
+    const investmentCntLocal: string = getItemLocalStoragePageIndex("investmentCnt", "0");
+    const rotationsParsed: TypeRotation[] = JSON.parse(getItemLocalStoragePageIndex("rotations", "[]"));
+    const storeNameLocal: string = getItemLocalStoragePageIndex("storeName", "");
+    const machineNameLocal: string = getItemLocalStoragePageIndex("machineName", "");
+    const ballNumberConfirmLocal: string = getItemLocalStoragePageIndex("ballNumberConfirm", "");
+    const borderLocal: string = getItemLocalStoragePageIndex("border", "18.0");
+    const remarksLocal: string = getItemLocalStoragePageIndex("remarks", "");
+    const ballNumberBigHitBeforeLocal: string = getItemLocalStoragePageIndex("ballNumberBigHitBefore", "0");
+    const ballNumberBigHitAfterLocal: string = getItemLocalStoragePageIndex("ballNumberBigHitAfter", "0");
+    const roundBaseLocal: number = Number(getItemLocalStoragePageIndex("roundBase", ""));
+    const roundRecordLocal: string = getItemLocalStoragePageIndex("roundRecord", "");
+    const wonBallNumberRecordLocal: string = getItemLocalStoragePageIndex("wonBallNumberRecord", "");
+
+    setMachineNumberInStore(machineNumberInStoreLocal);
+    setSpreadSheetId(spreadSheetIdLocal);
+    setSizeTenKey(sizeTenKeyLocal);
     setInvestmentCnt(Number(investmentCntLocal));
-    setStoreName(storeNameLocal);
     setRotations(rotationsParsed);
+    setRotationRate(calcRotationRate(rotationsParsed));
+    setRotationNumberTotal(calcRotationNumberTotal(rotationsParsed));
+    setStoreName(storeNameLocal);
     setMachineName(machineNameLocal);
     setBallNumberConfirm(ballNumberConfirmLocal);
     setBorder(borderLocal);
     setRemarks(remarksLocal);
-    setRotationRate(calcRotationRate(rotationsParsed));
-    setRotationNumberTotal(calcRotationNumberTotal(rotationsParsed));
-  }, []);
+    setBallNumberBigHitBefore(ballNumberBigHitBeforeLocal);
+    setBallNumberBigHitAfter(ballNumberBigHitAfterLocal);
+    setRoundBase(roundBaseLocal);
+    setRoundRecord(roundRecordLocal);
+    setWonBallNumberRecord(wonBallNumberRecordLocal);
+  }, [getItemLocalStoragePageIndex]);
+
+  const sumRoundBaseRecords = (record: string) => {
+    const regexSplit = /[\n.,]/;
+    const records = record.split(regexSplit).map((record) => Number(record));
+    const recordsTotal = records.reduce((prev, curr) => {
+      return prev + curr;
+    }, 0);
+
+    return recordsTotal;
+  };
+
+  useEffect(() => {
+    setItemLocalStoragePageIndex("machineNumberInStore", machineNumberInStore);
+  }, [machineNumberInStore, setItemLocalStoragePageIndex]);
+
+  useEffect(() => {
+    setItemLocalStorage("sizeTenKey", sizeTenKey);
+  }, [sizeTenKey]);
+
+  useEffect(() => {
+    setItemLocalStoragePageIndex("wonBallNumberRecord", wonBallNumberRecord);
+    const recordsTotal = sumRoundBaseRecords(wonBallNumberRecord);
+    setWonBallNumberTotal(recordsTotal);
+  }, [wonBallNumberRecord, setItemLocalStoragePageIndex]);
+
+  useEffect(() => {
+    setItemLocalStoragePageIndex("roundRecord", roundRecord);
+    const recordsTotal = sumRoundBaseRecords(roundRecord);
+    setRoundTotal(recordsTotal);
+  }, [roundRecord, setItemLocalStoragePageIndex]);
+
+  useEffect(() => {
+    const roundBase = Number((wonBallNumberTotal / roundTotal).toFixed(1));
+    setRoundBase(roundBase);
+    setItemLocalStoragePageIndex("roundBase", "" + roundBase);
+  }, [roundTotal, wonBallNumberTotal, setItemLocalStoragePageIndex]);
 
   useEffect(() => {
     (rotationListRef as any).current.scrollTop = (rotationListRef as any).current.scrollHeight;
-    localStorage.setItem("rotations", JSON.stringify(rotations));
-  }, [rotations]);
+    setItemLocalStoragePageIndex("rotations", JSON.stringify(rotations));
+  }, [rotations, setItemLocalStoragePageIndex]);
 
   useEffect(() => {
-    localStorage.setItem("investmentCnt", "" + investmentCnt);
-  }, [investmentCnt]);
+    setItemLocalStoragePageIndex("investmentCnt", "" + investmentCnt);
+  }, [investmentCnt, setItemLocalStoragePageIndex]);
 
   useEffect(() => {
-    localStorage.setItem("border", border);
-  }, [border]);
+    setItemLocalStoragePageIndex("border", border);
+  }, [border, setItemLocalStoragePageIndex]);
 
   useEffect(() => {
-    localStorage.setItem("ballNumberConfirm", ballNumberConfirm);
-  }, [ballNumberConfirm]);
+    setItemLocalStoragePageIndex("ballNumberConfirm", ballNumberConfirm);
+  }, [ballNumberConfirm, setItemLocalStoragePageIndex]);
 
   useEffect(() => {
-    localStorage.setItem("remarks", remarks);
-  }, [remarks]);
+    setItemLocalStoragePageIndex("remarks", remarks);
+  }, [remarks, setItemLocalStoragePageIndex]);
+
+  useEffect(() => {
+    setItemLocalStoragePageIndex("machineName", machineName);
+  }, [machineName, setItemLocalStoragePageIndex]);
 
   useEffect(() => {
     // 選択肢の店名が変更されたら、対応した交換率へ変更する。
     const storeExchangeRate = STORE_NAMES_EXCHANGE_RATES_MAP.get(storeName);
     setExchangeRate(String(storeExchangeRate));
 
-    localStorage.setItem("storeName", storeName);
-  }, [storeName]);
+    setItemLocalStoragePageIndex("storeName", storeName);
+  }, [storeName, setItemLocalStoragePageIndex]);
 
   // ■useMemo系
   // 「回転単価」が「ボーダーまたは回転率」に対する「導出項目」のため。
@@ -107,6 +216,19 @@ function App() {
   }, [border, rotationRate]);
 
   // ■change系
+  function changeMachineNumberInStore(event: React.ChangeEvent<HTMLInputElement>) {
+    setMachineNumberInStore(event.target.value);
+  }
+
+  function changeSpreadSheetId(event: React.ChangeEvent<HTMLInputElement>) {
+    setSpreadSheetId(event.target.value);
+    setItemLocalStorage("spreadSheetId", spreadSheetId);
+  }
+
+  function changeSizeButton(event: React.ChangeEvent<HTMLInputElement>) {
+    setSizeTenKey(event.target.value);
+  }
+
   function changeStoreNamesSelect(event: React.ChangeEvent<HTMLInputElement>) {
     setStoreName(event.target.value);
   }
@@ -119,7 +241,6 @@ function App() {
   function changeMachineName(event: React.ChangeEvent<HTMLInputElement>) {
     const machineName = event.target.value;
     setMachineName(machineName);
-    localStorage.setItem("machineName", machineName);
   }
 
   // 備考の変更
@@ -128,10 +249,48 @@ function App() {
     setRemarks(remarksInputed);
   }
 
+  // 大当前玉数の変更
+  function changeBallNumberBigHitBefore(event: React.ChangeEvent<HTMLInputElement>) {
+    const input = event.target.value;
+    setItemLocalStoragePageIndex("ballNumberBigHitBefore", input);
+    setBallNumberBigHitBefore(input);
+  }
+
+  // 大当後玉数の変更
+  function changeBallNumberBigHitAfter(event: React.ChangeEvent<HTMLInputElement>) {
+    const input = event.target.value;
+    setItemLocalStoragePageIndex("ballNumberBigHitAfter", input);
+    setBallNumberBigHitAfter(input);
+  }
+
+  // 獲得玉数記録の変更
+  function changeWonBallNumberRecord(event: React.ChangeEvent<HTMLInputElement>) {
+    const input = event.target.value;
+    setWonBallNumberRecord(input);
+  }
+
+  // ラウンド記録の変更
+  function changeRoundRecord(event: React.ChangeEvent<HTMLInputElement>) {
+    const input = event.target.value;
+    setRoundRecord(input);
+  }
+
   // 回転数入力ミス防止用玉数の変更
   function changeBallNumberConfirm(event: React.ChangeEvent<HTMLInputElement>) {
     const ballNumberConfirm = event.target.value;
     setBallNumberConfirm(ballNumberConfirm);
+  }
+
+  // 自動回転に使用する玉数
+  function changeBallNumberAutoRotation(event: React.ChangeEvent<HTMLInputElement>) {
+    const ballNumberAutoRotation = event.target.value;
+    setBallNumberAutoRotation(ballNumberAutoRotation);
+  }
+
+  // 自動回転に使用する回転数
+  function changeRotationNumberAutoRotation(event: React.ChangeEvent<HTMLInputElement>) {
+    const rotationNumberAutoRotation = event.target.value;
+    setRotationNumberAutoRotation(rotationNumberAutoRotation);
   }
 
   function changeRotationNumberInputed(event: React.ChangeEvent<HTMLInputElement>) {
@@ -143,12 +302,36 @@ function App() {
     return rotations.length > 0 && rotations[0].type === ROTATION_MODE.resetStart;
   }
 
+  // 今選択している店舗が大当たり出玉計数機能を付けているかどうか
+  function hasCountFunctionBigHitBallNumber() {
+    return storeName === "NtNakano";
+  }
+
   function clearRotationNumberInputed() {
     setRotationNumberInputed("");
   }
 
   function getWorkAmount() {
     return (rotationUnitPrice * rotationNumberTotal).toFixed(0);
+  }
+
+  // 獲得玉数の計算
+  function calculateWonBallNumber() {
+    try {
+      if (window.confirm("獲得玉数の計算、入力を行います")) {
+        // 大当たり後 ー 大当たり前　で　獲得玉数を計算
+        const wonBallNumberCalculated = Number(ballNumberBigHitAfter) - Number(ballNumberBigHitBefore);
+        // 大当たり前の玉数が大当たり後より大きければエラー
+        if (wonBallNumberCalculated < 0) {
+          throw ERROR_MSG.bigHitBallNumberBeforeBigThanAfter;
+        }
+        // 改行するかどうか？初回書き込み時は改行しない。
+        const lineBreakIf = wonBallNumberRecord === "" ? "" : "\n";
+        setWonBallNumberRecord(`${wonBallNumberRecord}${lineBreakIf}${wonBallNumberCalculated},`);
+      }
+    } catch (error) {
+      alert(error);
+    }
   }
 
   // 一回の貸出ボタン玉数
@@ -163,6 +346,21 @@ function App() {
       alert(error);
       return ballNumberLentDefault;
     }
+  }
+
+  // 前のページへ移動
+  function toPrevPage() {
+    // ページが0未満に行かないようにする。
+    if (pageIndex === 0) return;
+    setItemLocalStorage("pageIndex", "" + (pageIndex - 1));
+    setPageIndex(pageIndex - 1);
+  }
+  // 次のページへ移動
+  function toNextPage() {
+    // ページが10より上に行かないようにする。
+    if (pageIndex === 10) return;
+    setItemLocalStorage("pageIndex", "" + (pageIndex + 1));
+    setPageIndex(pageIndex + 1);
   }
 
   //　回転配列を1行削除する。
@@ -219,6 +417,7 @@ function App() {
     return last(rotations).rotationRate;
   }
 
+  // 「回転配列の全行削除」と「初期化するべきデータの初期化」
   function deleteAllRotation() {
     if (window.confirm("全行削除してもいいですか？")) {
       setRotations([]);
@@ -228,6 +427,13 @@ function App() {
       setBallNumberConfirm("");
       setMachineName("");
       setRemarks("");
+      setRoundRecord("");
+      setWonBallNumberRecord("");
+      setMachineNumberInStore("");
+      if (hasCountFunctionBigHitBallNumber()) {
+        setBallNumberBigHitBefore("");
+        setBallNumberBigHitAfter("");
+      }
     }
   }
 
@@ -235,10 +441,16 @@ function App() {
   function writeWorkResultAndDeleteAllRotation() {
     const now = new Date();
     const date = format(now, "yyyy/MM/dd");
-    const timeStart = localStorage.getItem("startTime");
+    const timeStart = getItemLocalStorage("startTime", "");
     const timeEnd = format(now, "HH:mm");
 
+    if (spreadSheetId === "") {
+      alert("ssidを入力して下さい。");
+      return;
+    }
+
     const params = new URLSearchParams();
+    params.append("spreadsheetId", `${spreadSheetId}`);
     params.append("date", `${date}`);
     params.append("timeStart", `${timeStart}`);
     params.append("timeEnd", `${timeEnd}`);
@@ -246,9 +458,11 @@ function App() {
     params.append("rotationRate", `${rotationRate}`);
     params.append("rotationUnitPrice", `${rotationUnitPrice}`);
     params.append("rotationNumberTotal", `${rotationNumberTotal}`);
+    params.append("roundBase", `${roundBase}`);
     params.append("workAmount", `${getWorkAmount()}`);
     params.append("machineName", `${machineName}`);
     params.append("storeName", `${storeName}`);
+    params.append("machineNumberInStore", `${machineNumberInStore}`);
     params.append("remarks", `${remarks}`);
 
     axios
@@ -286,6 +500,52 @@ function App() {
     const after = ("00" + rotationNumberInputed).slice(-digitsHowMuch);
     // 連結パート
     return Number(before + after);
+  }
+
+  // 自動回転
+  async function autoRotation() {
+    if (ballNumberAutoRotation === "" || rotationNumberAutoRotation === "") {
+      alert("玉数または回転数を指定しましょう");
+      return;
+    }
+
+    // 玉数の差から投資回数を算出
+    const diffBallNumber = Number(ballNumberConfirm) - Number(ballNumberAutoRotation);
+    if (diffBallNumber < 0) {
+      alert("自動回転の玉数は、確認用玉数より大きい値を指定しましょう。");
+      return;
+    }
+
+    // 回転ボタンを非同期でクリックするために作成。
+    const clickRotation = () => {
+      return sleep(1).then(() => rotationButtonRef.current.click());
+    };
+
+    let countInvestment = diffBallNumber / getBallNumberLent(storeName);
+    // 丁度いい回転数を自動入力するために算出
+    let diffRotationNumber = Number(rotationNumberAutoRotation) - last(rotations).rotationNumber;
+    // 投資回数が整数でない場合は、考えないことにしています。
+    if (!Number.isInteger(countInvestment)) {
+      if (!window.confirm("投資回数が整数ではありません。\n半端を除いて計算してもいいですか？")) return;
+      // 回転数の小数部分
+      const countInvestmentDecimal = countInvestment - parseInt(String(countInvestment));
+      // 投資回数を整数に修正
+      countInvestment -= countInvestmentDecimal;
+      // 余分な回転数を総回転数から引く
+      const rotationNumberExtra = Math.round(diffRotationNumber * countInvestmentDecimal);
+      diffRotationNumber -= rotationNumberExtra;
+    }
+    // 一回の投資ごとの回転数。ユーザへの確認に用います。厳密にやらずに、小数点は無視します。
+    const rotationNumberPerInvestment = Math.floor(diffRotationNumber / countInvestment);
+
+    // 自動回転の実施を確認します。
+    if (!window.confirm(`自動回転してもいいですか？\n投資回数：${countInvestment}回\n平均回転数：${rotationNumberPerInvestment}`)) return;
+    // 投資回数分、回転数を自動入力していきます。
+    for (let index = 0; index < countInvestment; index++) {
+      const rotationNumber = Number(rotationNumberAutoRotation) - rotationNumberPerInvestment * (countInvestment - 1 - index);
+      setRotationNumberInputed(String(rotationNumber));
+      await clickRotation();
+    }
   }
 
   // 通常回転（回転ボタン押下時の処理）
@@ -340,22 +600,26 @@ function App() {
 
   return (
     <div className="App">
-      <Container className={`pt-3 ${isCorrectBallNumberConfirm ? "" : styles.bg_warning}`}>
+      <Container className={`pt-3 ${isCorrectBallNumberConfirm ? "" : styles.bg_warning}`} {...handlers}>
         <Row>
           <Col>
             <p className="mb-0">
-              回転単価：<span>{rotationUnitPrice}</span>
-            </p>
-            <p className="mb-0">
-              総回転数：<span>{rotationNumberTotal}</span>
-            </p>
-            <p className="mb-0">
-              仕事量：<span>{getWorkAmount()}</span>
+              <span>{pageIndex}ページ目</span>
             </p>
 
-            <Row>
+            <p className="mb-0">
+              <span>{rotationUnitPrice}</span> * <span>{rotationNumberTotal}</span> = <span data-testid="work-amount">{getWorkAmount()}</span>
+            </p>
+
+            <Row className="justify-content-between">
               <Button className="mb-1" variant="primary" onClick={() => deleteOneRotation()}>
                 1行削除
+              </Button>
+              <Button className={`mb-1 ${pageIndex === 0 ? "d-none" : ""}`} variant="primary" onClick={() => toPrevPage()}>
+                前
+              </Button>
+              <Button className="mb-1" variant="primary" onClick={() => toNextPage()}>
+                次
               </Button>
             </Row>
 
@@ -367,13 +631,18 @@ function App() {
               placeholder="回転数入力"
             />
 
-            <Row className="m-0 mb-2">
-              <NumberButtons setRotationNumberInputed={setRotationNumberInputed} rotationNumberInputed={rotationNumberInputed} />
-              <Button variant="primary" className="col-4" onClick={() => clearRotationNumberInputed()}>
+            <Row className="mb-2">
+              <NumberButtons
+                setRotationNumberInputed={setRotationNumberInputed}
+                rotationNumberInputed={rotationNumberInputed}
+                getStyleSizeTenKey={getStyleSizeTenKey}
+              />
+              <Button variant="primary" className={`col-4 ${styles.font_button}`} onClick={() => clearRotationNumberInputed()}>
                 C
               </Button>
               <Button variant="primary" className="col-4"></Button>
-              <Button variant="primary" className="col-4" onClick={() => rotation()}>
+
+              <Button variant="primary" className="col-4" style={getStyleSizeTenKey()} ref={rotationButtonRef} onClick={() => rotation()}>
                 回転
               </Button>
 
@@ -393,9 +662,55 @@ function App() {
                 isResetStarted={isResetStarted}
                 clearRotationNumberInputed={clearRotationNumberInputed}
                 setRotations={setRotations}
+                setRemarks={setRemarks}
               />
             </Row>
+          </Col>
+          <Col>
+            <ListGroup className="rotationList" ref={rotationListRef}>
+              <Rotations rotations={rotations} />
+            </ListGroup>
 
+            <div className="mt-2">
+              <div className={`mb-2 ${hasCountFunctionBigHitBallNumber() ? "" : "d-none"}`}>
+                <InputGroup size="sm">
+                  <InputGroup.Prepend>
+                    <InputGroup.Text>大当前玉数</InputGroup.Text>
+                  </InputGroup.Prepend>
+                  <FormControl type="number" value={ballNumberBigHitBefore} onChange={changeBallNumberBigHitBefore} />
+                </InputGroup>
+                <InputGroup size="sm">
+                  <InputGroup.Prepend>
+                    <InputGroup.Text>大当後玉数</InputGroup.Text>
+                  </InputGroup.Prepend>
+                  <FormControl type="number" value={ballNumberBigHitAfter} onChange={changeBallNumberBigHitAfter} />
+                </InputGroup>
+                <Button variant="primary" size="sm" onClick={() => calculateWonBallNumber()}>
+                  獲得玉数計算
+                </Button>
+              </div>
+              <span className="mb-0">獲得玉数</span>
+              <InputGroup>
+                <FormControl
+                  as="textarea"
+                  rows={2}
+                  placeholder="獲得玉数"
+                  inputMode="numeric"
+                  value={wonBallNumberRecord}
+                  onChange={changeWonBallNumberRecord}
+                />
+              </InputGroup>
+              <span className="mb-0">ラウンド数</span>
+              <InputGroup>
+                <FormControl as="textarea" rows={2} placeholder="ラウンド" inputMode="numeric" value={roundRecord} onChange={changeRoundRecord} />
+              </InputGroup>
+              <p className="mb-0">rb: {roundBase}</p>
+            </div>
+          </Col>
+        </Row>
+
+        <Row>
+          <Col>
             <Row>
               <InputGroup size="sm">
                 <InputGroup.Prepend>
@@ -406,34 +721,46 @@ function App() {
             </Row>
             <Row>
               <InputGroup size="sm">
+                <FormControl
+                  value={ballNumberAutoRotation}
+                  data-testid="ball-number-auto-rotation"
+                  onChange={changeBallNumberAutoRotation}
+                  type="number"
+                  placeholder="玉数"
+                />
+                <FormControl
+                  value={rotationNumberAutoRotation}
+                  data-testid="ball-number-auto-rotation"
+                  onChange={changeRotationNumberAutoRotation}
+                  type="number"
+                  placeholder="回転数"
+                />
+                <InputGroup.Append>
+                  <Button variant="outline-primary" onClick={() => autoRotation()}>
+                    自回
+                  </Button>
+                </InputGroup.Append>
+              </InputGroup>
+            </Row>
+
+            <Row>
+              <InputGroup size="sm">
                 <InputGroup.Prepend>
                   <InputGroup.Text>ボーダー</InputGroup.Text>
                 </InputGroup.Prepend>
-                <FormControl value={border} data-testid="border" onChange={changeBorder} />
+                <FormControl value={border} data-testid="border" onChange={changeBorder} type="number" />
               </InputGroup>
             </Row>
+
             <Row>
               <InputGroup size="sm">
                 <InputGroup.Prepend>
-                  <InputGroup.Text>店名</InputGroup.Text>
+                  <InputGroup.Text>台番</InputGroup.Text>
                 </InputGroup.Prepend>
-                <Form.Control as="select" value={storeName} onChange={changeStoreNamesSelect} ref={selectStoreRef}>
-                  <StoreNames storeNames={STORE_NAMES} />
-                </Form.Control>
+                <FormControl value={machineNumberInStore} data-testid="machineNumberInStore" onChange={changeMachineNumberInStore} type="number" />
               </InputGroup>
             </Row>
-            <Row>
-              <div className="mr-2">交換率:</div>
-              <div>{exchangeRate}</div>
-            </Row>
-            <Row>
-              <InputGroup size="sm">
-                <InputGroup.Prepend>
-                  <InputGroup.Text>機種名</InputGroup.Text>
-                </InputGroup.Prepend>
-                <FormControl value={machineName} onChange={changeMachineName} />
-              </InputGroup>
-            </Row>
+
             <Row>
               <InputGroup size="sm">
                 <InputGroup.Prepend>
@@ -442,6 +769,7 @@ function App() {
                 <Form.Control as="textarea" rows={2} value={remarks} onChange={changeRemarks} />
               </InputGroup>
             </Row>
+
             <Row>
               <Button className="mt-5" variant="primary" onClick={() => writeWorkResultAndDeleteAllRotation()}>
                 表書込＆全削
@@ -454,10 +782,42 @@ function App() {
               </Button>
             </Row>
           </Col>
+
           <Col>
-            <ListGroup className="rotationList" ref={rotationListRef}>
-              <Rotations rotations={rotations} />
-            </ListGroup>
+            <div>
+              <InputGroup size="sm">
+                <InputGroup.Prepend>
+                  <InputGroup.Text>店名</InputGroup.Text>
+                </InputGroup.Prepend>
+                <Form.Control as="select" value={storeName} onChange={changeStoreNamesSelect} ref={selectStoreRef}>
+                  <StoreNames storeNames={STORE_NAMES} />
+                </Form.Control>
+              </InputGroup>
+            </div>
+            <div>
+              <InputGroup size="sm">
+                <InputGroup.Prepend>
+                  <InputGroup.Text>機種名</InputGroup.Text>
+                </InputGroup.Prepend>
+                <FormControl value={machineName} onChange={changeMachineName} />
+              </InputGroup>
+            </div>
+            <div>
+              <div className="mr-2">交換率:{exchangeRate}</div>
+            </div>
+            <InputGroup size="sm">
+              <InputGroup.Prepend>
+                <InputGroup.Text>ボタン大きさ</InputGroup.Text>
+              </InputGroup.Prepend>
+              <FormControl value={sizeTenKey} min="1" max="30" onChange={changeSizeButton} type="number" />
+            </InputGroup>
+
+            <InputGroup size="sm">
+              <InputGroup.Prepend>
+                <InputGroup.Text>ssid</InputGroup.Text>
+              </InputGroup.Prepend>
+              <FormControl value={spreadSheetId} onChange={changeSpreadSheetId} />
+            </InputGroup>
           </Col>
         </Row>
       </Container>
