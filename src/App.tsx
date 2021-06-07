@@ -70,6 +70,14 @@ function App() {
   const selectStoreRef = useRef<HTMLSelectElement>(document.createElement("select"));
   const rotationButtonRef = useRef<HTMLButtonElement>(document.createElement("button"));
 
+  // ローカルストレージ系関数
+  const setItemLocalStorage = (keyName: string, setValue: string) => {
+    localStorage.setItem(keyName, setValue);
+  };
+  const getItemLocalStorage = (keyName: string, getDefault: string) => {
+    return localStorage.getItem(keyName) || getDefault;
+  };
+
   // 各ページで固有のものにしたいデータを保存するために使用する関数。
   const setItemLocalStoragePageIndex = useCallback(
     (keyName: string, setted: string) => {
@@ -90,15 +98,15 @@ function App() {
 
   // 初回描画時に実行
   useEffect(() => {
-    const pageIndexLocal: number = Number(localStorage.getItem("pageIndex") || "0");
+    const pageIndexLocal: number = Number(getItemLocalStorage("pageIndex", "0"));
     setPageIndex(pageIndexLocal);
   }, []);
 
   useEffect(() => {
     // ローカルストレージから各値を取得。
     const machineNumberInStoreLocal: string = getItemLocalStoragePageIndex("machineNumberInStore", "");
-    const spreadSheetIdLocal: string = localStorage.getItem("spreadSheetId") || "";
-    const sizeTenKeyLocal: string = localStorage.getItem("sizeTenKey") || "10";
+    const spreadSheetIdLocal: string = getItemLocalStorage("spreadSheetId", "");
+    const sizeTenKeyLocal: string = getItemLocalStorage("sizeTenKey", "10");
     const investmentCntLocal: string = getItemLocalStoragePageIndex("investmentCnt", "0");
     const rotationsParsed: TypeRotation[] = JSON.parse(getItemLocalStoragePageIndex("rotations", "[]"));
     const storeNameLocal: string = getItemLocalStoragePageIndex("storeName", "");
@@ -146,11 +154,11 @@ function App() {
   }, [machineNumberInStore, setItemLocalStoragePageIndex]);
 
   useEffect(() => {
-    localStorage.setItem("spreadSheetId", spreadSheetId);
+    setItemLocalStorage("spreadSheetId", spreadSheetId);
   }, [spreadSheetId]);
 
   useEffect(() => {
-    localStorage.setItem("sizeTenKey", sizeTenKey);
+    setItemLocalStorage("sizeTenKey", sizeTenKey);
   }, [sizeTenKey]);
 
   useEffect(() => {
@@ -347,14 +355,14 @@ function App() {
   function toPrevPage() {
     // ページが0未満に行かないようにする。
     if (pageIndex === 0) return;
-    localStorage.setItem("pageIndex", "" + (pageIndex - 1));
+    setItemLocalStorage("pageIndex", "" + (pageIndex - 1));
     setPageIndex(pageIndex - 1);
   }
   // 次のページへ移動
   function toNextPage() {
     // ページが10より上に行かないようにする。
     if (pageIndex === 10) return;
-    localStorage.setItem("pageIndex", "" + (pageIndex + 1));
+    setItemLocalStorage("pageIndex", "" + (pageIndex + 1));
     setPageIndex(pageIndex + 1);
   }
 
@@ -436,7 +444,7 @@ function App() {
   function writeWorkResultAndDeleteAllRotation() {
     const now = new Date();
     const date = format(now, "yyyy/MM/dd");
-    const timeStart = localStorage.getItem("startTime");
+    const timeStart = getItemLocalStorage("startTime", "");
     const timeEnd = format(now, "HH:mm");
 
     if (spreadSheetId === "") {
