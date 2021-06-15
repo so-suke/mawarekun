@@ -32,6 +32,10 @@ const axios = require("axios").default;
 
 const config = { delta: 100 };
 
+// なぜ'-1'なのか？↓
+// ページ再読込時に初期pageIndexのページデータが初期化されるのを防ぐため
+const PAGE_INDEX_PREVENT_INIT = -1;
+
 function App() {
   const handlers = useSwipeable({
     onSwipedLeft: (eventData) => toNextPage(),
@@ -39,7 +43,7 @@ function App() {
     ...config,
   });
   // useState定義
-  const [pageIndex, setPageIndex] = useState(0);
+  const [pageIndex, setPageIndex] = useState(PAGE_INDEX_PREVENT_INIT);
   const [sizeTenKey, setSizeTenKey] = useState("12");
   const [rotationNumberInputed, setRotationNumberInputed] = useState<string>("");
   const [rotations, setRotations] = useState<TypeRotation[]>([]);
@@ -80,8 +84,9 @@ function App() {
 
   // 各ページで固有のものにしたいデータを保存するために使用する関数。
   const setItemLocalStoragePageIndex = useCallback(
-    (keyName: string, setted: string) => {
-      localStorage.setItem(`${keyName}_${pageIndex}`, setted);
+    (keyName: string, setValue: string) => {
+      if (pageIndex === PAGE_INDEX_PREVENT_INIT) return;
+      localStorage.setItem(`${keyName}_${pageIndex}`, setValue);
     },
     [pageIndex]
   );
@@ -204,7 +209,6 @@ function App() {
     // 選択肢の店名が変更されたら、対応した交換率へ変更する。
     const storeExchangeRate = STORE_NAMES_EXCHANGE_RATES_MAP.get(storeName);
     setExchangeRate(String(storeExchangeRate));
-
     setItemLocalStoragePageIndex("storeName", storeName);
   }, [storeName, setItemLocalStoragePageIndex]);
 
